@@ -1,0 +1,7 @@
+{
+  "name": "StudyMate AI",
+  "description": "AI-powered study planning and learning assistant for students with adaptive schedules, topic explanations, and practice quizzes powered by Google Gemini.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
