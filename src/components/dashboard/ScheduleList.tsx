@@ -13,17 +13,19 @@ interface ScheduleListProps {
 export const ScheduleList: React.FC<ScheduleListProps> = ({ plan, onStatusChange, onMissedClick }) => {
   if (!plan || plan.tasks.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center space-y-3">
-        <Calendar className="w-8 h-8 text-slate-400 mx-auto" />
-        <h3 className="text-base font-semibold text-slate-900">No Active Study Plan</h3>
-        <p className="text-xs text-slate-500 max-w-sm mx-auto">
-          Generate an AI study schedule with Claude to get daily tasks, spaced revision, and practice recommendations.
+      <div className="bg-white rounded-2xl border border-[#E2DDD2] p-8 text-center space-y-4">
+        <div className="w-12 h-12 rounded-xl bg-[#EAF2F6] text-[#1A5C7A] flex items-center justify-center mx-auto">
+          <Calendar className="w-6 h-6" />
+        </div>
+        <h3 className="text-base font-bold text-[#0B1720]">No Active Study Plan</h3>
+        <p className="text-xs sm:text-sm text-[#6B747A] max-w-sm mx-auto leading-relaxed">
+          Generate an intelligent study schedule to get daily tasks, spaced revision, and active practice recommendations.
         </p>
         <Link
           to="/planner"
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 shadow-xs"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1A5C7A] text-white rounded-xl text-xs font-semibold hover:bg-[#207297] shadow-xs transition-colors"
         >
-          <Sparkles className="w-4 h-4" /> Create Study Plan
+          <Sparkles className="w-4 h-4 text-sky-300" /> Create Study Plan
         </Link>
       </div>
     );
@@ -33,19 +35,20 @@ export const ScheduleList: React.FC<ScheduleListProps> = ({ plan, onStatusChange
   const upcomingTasks = plan.tasks.slice(0, 6);
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="bg-white rounded-2xl border border-[#E2DDD2] p-6 shadow-xs space-y-4">
+      <div className="flex items-center justify-between border-b border-[#F0ECE4] pb-4">
         <div>
-          <h3 className="text-base font-bold text-slate-900">Current Study Schedule</h3>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <h3 className="text-base font-bold text-[#0B1720]">Current Study Schedule</h3>
+          <p className="text-xs text-[#6B747A] mt-0.5">
             {plan.subject} &bull; {plan.dailyHours} hrs/day target
           </p>
         </div>
         <Link
           to="/planner"
-          className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+          className="text-xs font-bold text-[#1A5C7A] hover:text-[#207297] flex items-center gap-1"
         >
-          View Full Plan <ArrowRight className="w-3.5 h-3.5" />
+          <span>View Full Plan</span>
+          <ArrowRight className="w-3.5 h-3.5" />
         </Link>
       </div>
 
@@ -57,12 +60,12 @@ export const ScheduleList: React.FC<ScheduleListProps> = ({ plan, onStatusChange
           return (
             <div
               key={task.id}
-              className={`p-3.5 rounded-xl border transition-colors flex items-center justify-between gap-3 ${
+              className={`p-4 rounded-xl border transition-colors flex items-center justify-between gap-3 ${
                 isCompleted
-                  ? 'bg-slate-50 border-slate-200 opacity-75'
+                  ? 'bg-slate-50/70 border-[#E2DDD2] opacity-75'
                   : isMissed
-                  ? 'bg-rose-50/50 border-rose-200'
-                  : 'bg-white border-slate-200 hover:border-indigo-200'
+                  ? 'bg-rose-50/40 border-rose-200'
+                  : 'bg-white border-[#E2DDD2] hover:border-[#1A5C7A]/40'
               }`}
             >
               <div className="flex items-start gap-3 min-w-0">
@@ -81,29 +84,35 @@ export const ScheduleList: React.FC<ScheduleListProps> = ({ plan, onStatusChange
 
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[11px] font-semibold text-slate-500">{task.day}</span>
+                    <span className="text-[11px] font-bold text-[#6B747A] font-mono">{task.day}</span>
                     <span className="text-slate-300">&bull;</span>
-                    <span className="text-[11px] text-slate-500 font-mono">{task.date}</span>
-                    <Badge variant={task.priority === 'High' ? 'danger' : 'default'} size="sm">
+                    <span className="text-[11px] text-[#6B747A] font-mono">{task.date}</span>
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                        task.priority === 'High'
+                          ? 'bg-rose-100 text-rose-700'
+                          : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
                       {task.priority}
-                    </Badge>
+                    </span>
                   </div>
-                  <h4 className={`text-sm font-semibold text-slate-900 truncate mt-0.5 ${isCompleted ? 'line-through text-slate-400' : ''}`}>
+                  <h4 className={`text-sm font-semibold text-[#0B1720] truncate mt-0.5 ${isCompleted ? 'line-through text-slate-400' : ''}`}>
                     {task.topic}
                   </h4>
-                  <p className="text-xs text-slate-500 truncate">{task.subtopic}</p>
+                  <p className="text-xs text-[#6B747A] truncate">{task.subtopic}</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="text-xs text-slate-500 font-mono hidden sm:inline">
+                <span className="text-xs text-[#6B747A] font-mono hidden sm:inline">
                   {task.durationMinutes}m
                 </span>
                 {!isCompleted && !isMissed && (
                   <button
                     type="button"
                     onClick={() => onMissedClick(task)}
-                    className="text-[11px] font-medium text-slate-400 hover:text-rose-600 px-2 py-1 rounded hover:bg-rose-50"
+                    className="text-[11px] font-medium text-[#6B747A] hover:text-rose-600 px-2.5 py-1 rounded-lg hover:bg-rose-50 transition-colors"
                   >
                     Missed?
                   </button>
@@ -116,3 +125,4 @@ export const ScheduleList: React.FC<ScheduleListProps> = ({ plan, onStatusChange
     </div>
   );
 };
+

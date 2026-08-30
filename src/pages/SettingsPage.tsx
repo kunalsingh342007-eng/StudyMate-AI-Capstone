@@ -86,17 +86,16 @@ export const SettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 py-4 sm:py-6 max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-8">
       {/* Header */}
-      <div>
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 mb-2">
-          <Settings className="w-3.5 h-3.5 text-indigo-600" />
-          Configuration & Diagnostics
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-          Application Settings
+      <div className="border-b border-[#E2DDD2] pb-6">
+        <span className="text-xs font-bold uppercase tracking-wider text-[#6B747A] font-mono">
+          PREFERENCES & BACKUP
+        </span>
+        <h1 className="text-2xl sm:text-4xl font-extrabold text-[#0B1720] tracking-tight">
+          Settings & Data
         </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+        <p className="text-xs sm:text-sm text-[#6B747A] mt-1">
           Manage your AI connection parameters, study schedule goals, accessibility settings, and local backups.
         </p>
       </div>

@@ -121,21 +121,20 @@ export const QuizPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 py-4 sm:py-6 max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-8">
       <Banner isDemoData={currentQuiz?.isDemoFallback} />
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E2DDD2] pb-6">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 mb-2">
-            <HelpCircle className="w-3.5 h-3.5 text-indigo-600" />
-            AI Practice & Assessment Engine
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            AI Exam Quizzes
+          <span className="text-xs font-bold uppercase tracking-wider text-[#6B747A] font-mono">
+            ACTIVE RECALL PRACTICE
+          </span>
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-[#0B1720] tracking-tight">
+            Practice Quizzes
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Rigorous multiple-choice questions with answer shielding, scoring, and deep explanations
+          <p className="text-xs sm:text-sm text-[#6B747A] mt-1">
+            Rigorous multiple-choice questions with answer shielding, diagnostics, and deep explanations
           </p>
         </div>
 
@@ -143,9 +142,9 @@ export const QuizPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowHistory(!showHistory)}
-            className="px-3.5 py-2 text-xs sm:text-sm font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl flex items-center gap-1.5 shadow-xs transition-colors"
+            className="px-4 py-2.5 text-xs sm:text-sm font-semibold text-[#0B1720] bg-white border border-[#E2DDD2] hover:bg-slate-50 rounded-xl flex items-center gap-2 shadow-xs transition-colors"
           >
-            <History className="w-4 h-4 text-indigo-600" />
+            <History className="w-4 h-4 text-[#1A5C7A]" />
             {showHistory ? 'Configure New Quiz' : `Quiz History (${quizHistory.length})`}
           </button>
         )}

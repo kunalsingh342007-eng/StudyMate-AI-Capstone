@@ -27,52 +27,46 @@ export const StatsGrid: React.FC<StatsGridProps> = ({ progress, activePlan }) =>
       icon: Flame,
       color: 'text-amber-500',
       bgColor: 'bg-amber-50',
-      borderColor: 'border-amber-100',
     },
     {
       label: 'Completed Tasks',
       value: `${progress.completedTasksCount} / ${progress.totalTasksCount || activePlan?.tasks.length || 0}`,
-      sub: `${completionRate}% of active syllabus`,
+      sub: `${completionRate}% syllabus covered`,
       icon: CheckCircle2,
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50',
-      borderColor: 'border-emerald-100',
     },
     {
       label: 'Exam Countdown',
       value: `${daysUntilExam} Days`,
-      sub: activePlan?.subject ? activePlan.subject.slice(0, 24) + '...' : 'Target Exam',
+      sub: activePlan?.subject ? activePlan.subject.slice(0, 20) + '...' : 'Target Exam',
       icon: Calendar,
-      color: 'text-indigo-600',
-      bgColor: 'bg-indigo-50',
-      borderColor: 'border-indigo-100',
+      color: 'text-[#1A5C7A]',
+      bgColor: 'bg-[#EAF2F6]',
     },
     {
       label: 'Total Hours Studied',
       value: `${progress.totalHoursStudied}h`,
       sub: 'Logged across sessions',
       icon: Clock,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      borderColor: 'border-blue-100',
+      color: 'text-[#1A5C7A]',
+      bgColor: 'bg-[#EAF2F6]',
     },
     {
       label: 'Quizzes Taken',
       value: `${progress.quizzesTaken}`,
       sub: `Avg score: ${progress.averageQuizScore}%`,
       icon: HelpCircle,
-      color: 'text-violet-600',
-      bgColor: 'bg-violet-50',
-      borderColor: 'border-violet-100',
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50',
     },
     {
-      label: 'Weak Areas Identified',
+      label: 'Weak Areas',
       value: `${progress.weakTopicsIdentified.length}`,
       sub: 'Prioritized for review',
       icon: TrendingUp,
       color: 'text-rose-600',
       bgColor: 'bg-rose-50',
-      borderColor: 'border-rose-100',
     },
   ];
 
@@ -83,10 +77,10 @@ export const StatsGrid: React.FC<StatsGridProps> = ({ progress, activePlan }) =>
         return (
           <div
             key={idx}
-            className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs flex flex-col justify-between"
+            className="bg-white rounded-2xl border border-[#E2DDD2] p-4 sm:p-5 shadow-xs flex flex-col justify-between"
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              <span className="text-[11px] font-bold text-[#6B747A] uppercase tracking-wider font-mono">
                 {stat.label}
               </span>
               <div className={`w-7 h-7 rounded-lg ${stat.bgColor} ${stat.color} flex items-center justify-center`}>
@@ -94,8 +88,8 @@ export const StatsGrid: React.FC<StatsGridProps> = ({ progress, activePlan }) =>
               </div>
             </div>
             <div>
-              <div className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">{stat.value}</div>
-              <p className="text-[11px] text-slate-500 truncate mt-0.5">{stat.sub}</p>
+              <div className="text-xl sm:text-2xl font-bold text-[#0B1720] tracking-tight">{stat.value}</div>
+              <p className="text-[11px] text-[#6B747A] truncate mt-0.5">{stat.sub}</p>
             </div>
           </div>
         );
@@ -103,3 +97,4 @@ export const StatsGrid: React.FC<StatsGridProps> = ({ progress, activePlan }) =>
     </div>
   );
 };
+

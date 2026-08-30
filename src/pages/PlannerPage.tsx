@@ -79,17 +79,20 @@ export const PlannerPage: React.FC = () => {
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
-    <div className="space-y-6 py-4 sm:py-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-8">
       <Banner isDemoData={activePlan?.isDemoFallback} />
 
       {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E2DDD2] pb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            AI Study Planner
+          <span className="text-xs font-bold uppercase tracking-wider text-[#6B747A] font-mono">
+            SMART TIMETABLE
+          </span>
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-[#0B1720] tracking-tight">
+            Study Planner
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Evidence-informed study schedule generated with Anthropic Claude
+          <p className="text-xs sm:text-sm text-[#6B747A] mt-1">
+            Personalized study schedule tailored to your available time and syllabus
           </p>
         </div>
 
@@ -98,7 +101,7 @@ export const PlannerPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowCreateForm(!showCreateForm)}
-              className="px-4 py-2 text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors flex items-center gap-1.5 focus-visible:outline-2 focus-visible:outline-indigo-600"
+              className="px-5 py-2.5 text-xs sm:text-sm font-semibold text-white bg-[#1A5C7A] hover:bg-[#207297] rounded-xl shadow-xs transition-colors flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
               {showCreateForm ? 'View Current Plan' : 'Generate New Plan'}

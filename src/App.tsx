@@ -24,11 +24,11 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
+      <div className="min-h-screen bg-[#F4F1EA] text-[#0B1720] flex flex-col font-sans selection:bg-[#1A5C7A] selection:text-white">
         {/* WCAG Skip to Main Content Link */}
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:bg-indigo-600 focus:text-white focus:rounded-lg focus:shadow-lg focus:outline-none"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:bg-[#1A5C7A] focus:text-white focus:rounded-lg focus:shadow-lg focus:outline-none"
         >
           Skip to main content
         </a>
@@ -37,7 +37,7 @@ export default function App() {
         <Navbar />
 
         {/* Main Content Area */}
-        <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <main id="main-content" className="flex-1 w-full">
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
