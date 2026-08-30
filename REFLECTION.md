@@ -9,43 +9,48 @@
 
 Students and technical candidates often face a recurring dilemma: they have extensive syllabi and ambitious goals, but generic AI chat boxes provide disjointed, superficial answers with no accountability, schedule realism, or active recall reinforcement.
 
-**StudyMate AI** solves this problem by moving beyond the chatbot paradigm into a structured, pedagogical operating system powered exclusively by the **Anthropic Claude API** (`claude-3-5-sonnet-20241022`).
+**StudyMate AI** solves this problem by moving beyond the chatbot paradigm into a structured, pedagogical operating system powered by resilient, server-shielded LLM inference with strict Zod schema validation.
 
 ---
 
-## 2. Technical Architecture & Engineering Decisions
+## 2. Capstone Reflection Prompts
 
-### Claude API System Prompt Engineering
-Rather than asking Claude for freeform prose, we developed strict system instructions designed to:
+### What was hardest? Why?
+The hardest engineering challenge was **handling non-deterministic AI generation within strict pedagogical and UX constraints**:
+1. **Schema Integrity**: LLMs frequently produce conversational preamble or slightly varied JSON keys when tasked with complex multi-day study schedules. To solve this, we enforced strict Zod schema validation server-side and built automated payload sanitizers to ensure 100% reliable UI rendering.
+2. **Cognitive Load Bounds**: Ensuring the prompt engineering strictly distributed hours across preferred study days without exceeding the student's stated daily threshold, while reserving spaced revision slots for weak areas.
+
+### What would you do differently next time?
+1. **Streaming Partial JSON**: While full-response validation is robust, adopting streaming structured tokens would decrease perceived latency for 14-day study schedules on slower mobile connections.
+2. **Offline-First IndexDB Sync**: Although LocalStorage satisfies single-device state persistence, implementing IndexedDB with background service workers would allow complete offline quiz-taking and automatic queue synchronization when reconnected.
+
+### One thing you learned that surprised you
+**Invisible AI beats conversational AI for productivity tools**:
+Users do not want to "chat with a bot" when preparing for exams. They want clear timelines, high-yield revision summaries, interactive quizzes with hidden answer keys, and instant schedule recalibration when life gets in the way. Treating AI as an invisible backend reasoning engine rather than a chat personality transformed the application into a serious academic operating system.
+
+---
+
+## 3. Technical Architecture & Engineering Decisions
+
+### Prompt Engineering & Structured Output
+Rather than asking the model for freeform prose, we developed strict system instructions designed to:
 - Enforce **Cognitive Load Optimization**: Ensure tasks do not exceed the student's daily hour capacity.
 - Integrate **Spaced Repetition**: Intersperse past concepts into revision tasks throughout multi-day schedules.
-- Output **Strict, Parseable JSON**: Eliminate preamble, conversational commentary, and markdown code fence noise that often breaks downstream UI parsing.
-
-### Schema Enforcement with Zod
-To ensure 100% type safety and prevent UI rendering crashes from malformed model outputs:
-- Every Claude response is validated server-side against strict Zod schemas (`StudyPlanResponseSchema`, `TopicExplanationResponseSchema`, `QuizResponseSchema`, `AdaptedPlanResponseSchema`).
-- In the rare event of a schema mismatch or upstream timeout, the server normalizes the payload or seamlessly activates schema-valid demo data, safeguarding user workflow continuity.
+- Output **Strict, Parseable JSON**: Eliminate preamble and markdown noise.
 
 ### Zero-Exposure Security Model
-- Client code never receives or stores the `ANTHROPIC_API_KEY`.
-- All AI operations route through server-side endpoints (`/api/study-plan`, `/api/explain`, `/api/quiz`, `/api/adapt-plan`), fully insulating sensitive credentials.
+- Client code never receives or stores secret API keys.
+- All AI operations route through server-side endpoints (`/api/study-plan`, `/api/explain`, `/api/quiz`, `/api/adapt-plan`), fully insulating credentials.
 
----
-
-## 3. Pedagogical UX Decisions
-
-### Beyond Chatbots: 7-Section Conceptual Breakdown
-When explaining complex topics (e.g. *Recursion in C++*, *B-Trees*, *TCP vs UDP*), single-paragraph answers fail to build deep mental models. StudyMate structures explanations into seven clear cognitive layers:
+### Pedagogical 7-Section Conceptual Breakdown
+When explaining complex topics, StudyMate structures explanations into seven clear cognitive layers:
 1. Simple Definition
 2. Intuitive Real-World Analogy
-3. Step-by-Step Logic
+3. Step-by-Step Mechanism
 4. Applied Code / Formula Example
 5. Common Pitfalls & Traps
 6. High-Yield Revision Notes
 7. Active Recall Practice Questions with Hidden Hints & Answers
-
-### The "What Should I Study Today?" Paradigm
-Students frequently experience analysis paralysis when opening study dashboards. StudyMate eliminates this by centering a prominent, high-contrast **Priority Card** on the dashboard that highlights the single most important task for today, its duration, and learning objectives.
 
 ---
 
@@ -55,13 +60,3 @@ Students frequently experience analysis paralysis when opening study dashboards.
 - **Keyboard Operability**: Full keyboard navigation support across quizzes, expandable cards, and tab filters.
 - **Screen Reader Announcements**: Uses semantic landmarks (`<main>`, `<nav>`, `<fieldset>`, `<legend>`), ARIA roles, and live alerts.
 - **Visual Ergonomics**: Light theme optimized for high-contrast legibility, with subtle neutral saturation and no harsh gradients.
-
----
-
-## 5. Lessons Learned & Future Roadmap
-
-1. **Deterministic Fallbacks**: Building a resilient fallback layer allowed seamless offline development and guaranteed uninterrupted UX regardless of external network stability.
-2. **Future Enhancements**:
-   - Web Speech API integration for audio reading of revision notes.
-   - Syncing study tasks directly with Google Calendar or Apple iCal via `.ics` file exports.
-   - Anki / Spaced Repetition flashcard export in `.apkg` format.
