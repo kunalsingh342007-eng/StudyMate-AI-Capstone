@@ -48,18 +48,18 @@ export const ApiClient = {
       if (!res.ok) {
         return {
           isConfigured: false,
-          provider: 'Anthropic Claude',
-          model: 'claude-3-5-sonnet-20241022',
+          provider: 'Google Gemini',
+          model: 'gemini-3.7-flash',
           status: 'error',
-          message: 'Server status check returned an error.',
+          message: 'Checking Gemini API connection status...',
         };
       }
       return await res.json();
     } catch {
       return {
         isConfigured: false,
-        provider: 'Anthropic Claude',
-        model: 'claude-3-5-sonnet-20241022',
+        provider: 'Google Gemini',
+        model: 'gemini-3.7-flash',
         status: 'error',
         message: 'Could not reach server status endpoint. Operating in offline demo mode.',
       };

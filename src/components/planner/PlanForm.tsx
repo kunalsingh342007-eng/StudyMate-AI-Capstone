@@ -90,7 +90,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading }) => {
           Create New AI Study Schedule
         </h2>
         <p className="text-xs sm:text-sm text-slate-500 mt-1">
-          Claude will analyze your syllabus, balance spaced repetition, and allocate time based strictly on your available capacity.
+         StudyMate AI will analyze your syllabus, balance spaced repetition, and allocate time based strictly on your available capacity.
         </p>
       </div>
 
@@ -134,7 +134,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading }) => {
             className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:outline-indigo-600 focus:border-indigo-600"
           />
           <span className="text-[11px] text-slate-500 block">
-            List individual modules or chapter titles. Claude breaks each into actionable subtopics.
+            List individual modules or chapter titles. StudyMate AI breaks each into actionable subtopics.
           </span>
         </div>
 

@@ -5,10 +5,10 @@ import { AIStatus } from '../types';
 export function useAIStatus() {
   const [status, setStatus] = useState<AIStatus>({
     isConfigured: false,
-    provider: 'Anthropic Claude',
-    model: 'claude-3-5-sonnet-20241022',
+    provider: 'Google Gemini',
+     model: 'gemini-3.7-flash',
     status: 'missing_api_key',
-    message: 'Checking Claude API connection status...',
+    message: 'Checking Google Gemini API connection status...',
   });
   const [loading, setLoading] = useState(true);
 
@@ -19,8 +19,8 @@ export function useAIStatus() {
     } catch {
       setStatus({
         isConfigured: false,
-        provider: 'Anthropic Claude',
-        model: 'claude-3-5-sonnet-20241022',
+        provider: 'Google Gemini',
+        model: 'gemini-3.7-flash',
         status: 'error',
         message: 'Could not connect to API status endpoint.',
       });

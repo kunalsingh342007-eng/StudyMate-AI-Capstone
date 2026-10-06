@@ -170,7 +170,8 @@ export const PlannerPage: React.FC = () => {
             {/* Assumptions & Notes */}
             {activePlan.assumptions && activePlan.assumptions.length > 0 && (
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-600 space-y-1">
-                <strong className="text-slate-800">Claude Scheduling Assumptions:</strong>
+                <strong className="text-slate-800">
+               AI Scheduling Assumptions:</strong>
                 <ul className="list-disc pl-4 space-y-0.5">
                   {activePlan.assumptions.map((assump, i) => (
                     <li key={i}>{assump}</li>

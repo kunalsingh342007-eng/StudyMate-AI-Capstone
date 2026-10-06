@@ -4,7 +4,7 @@
 
 StudyMate AI is a production-grade, AI-powered study planning and learning assistant built for students preparing for high-stakes exams, technical certifications, and university courses.
 
-Powered by modern LLM inference (Google Gemini / Anthropic Claude compatible architecture), StudyMate AI delivers evidence-informed pedagogical scheduling, deep conceptual breakdowns, adaptive rescheduling, and shielded multiple-choice exam assessments.
+Powered by modern LLM inference Google Gemini  StudyMate AI delivers evidence-informed pedagogical scheduling, deep conceptual breakdowns, adaptive rescheduling, and shielded multiple-choice exam assessments.
 
 ---
 
