@@ -4,9 +4,17 @@ import {
   ExplainRequest,
   TopicExplanation,
   QuizRequest,
-  Quiz,
+  ClientQuiz,
+  QuizAnswerRequest,
+  QuizAnswerResponse,
+  QuizSubmitRequest,
+  QuizSubmitResponse,
   AdaptPlanRequest,
   AdaptedPlanResponse,
+  ExplainMistakeRequest,
+  MistakeExplanation,
+  ParseSyllabusRequest,
+  ParsedSyllabus,
   AIStatus,
 } from '../../types';
 
@@ -48,8 +56,8 @@ export const ApiClient = {
       if (!res.ok) {
         return {
           isConfigured: false,
-          provider: 'Anthropic Claude',
-          model: 'claude-3-5-sonnet-20241022',
+          provider: 'Google Gemini',
+          model: 'gemini-3.8-flash',
           status: 'error',
           message: 'Server status check returned an error.',
         };
@@ -58,8 +66,8 @@ export const ApiClient = {
     } catch {
       return {
         isConfigured: false,
-        provider: 'Anthropic Claude',
-        model: 'claude-3-5-sonnet-20241022',
+        provider: 'Google Gemini',
+        model: 'gemini-3.8-flash',
         status: 'error',
         message: 'Could not reach server status endpoint. Operating in offline demo mode.',
       };
@@ -96,7 +104,7 @@ export const ApiClient = {
     return await res.json();
   },
 
-  async generateQuiz(req: QuizRequest): Promise<Quiz> {
+  async generateQuiz(req: QuizRequest): Promise<ClientQuiz> {
     const res = await fetchWithTimeout('/api/quiz', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -106,6 +114,36 @@ export const ApiClient = {
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Failed to generate quiz' }));
       throw new ApiError(err.error || 'We could not generate your quiz right now. Please try again.', res.status);
+    }
+
+    return await res.json();
+  },
+
+  async answerQuizQuestion(req: QuizAnswerRequest): Promise<QuizAnswerResponse> {
+    const res = await fetchWithTimeout('/api/quiz/answer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to evaluate answer' }));
+      throw new ApiError(err.error || 'Could not verify your answer. Please try again.', res.status);
+    }
+
+    return await res.json();
+  },
+
+  async submitQuiz(req: QuizSubmitRequest): Promise<QuizSubmitResponse> {
+    const res = await fetchWithTimeout('/api/quiz/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to submit and score quiz' }));
+      throw new ApiError(err.error || 'Could not score your quiz. Please try again.', res.status);
     }
 
     return await res.json();
@@ -125,4 +163,35 @@ export const ApiClient = {
 
     return await res.json();
   },
+
+  async explainMistake(req: ExplainMistakeRequest): Promise<MistakeExplanation> {
+    const res = await fetchWithTimeout('/api/explain-mistake', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to analyze mistake' }));
+      throw new ApiError(err.error || 'We could not analyze this mistake right now. Please try again.', res.status);
+    }
+
+    return await res.json();
+  },
+
+  async parseSyllabus(req: ParseSyllabusRequest): Promise<ParsedSyllabus> {
+    const res = await fetchWithTimeout('/api/parse-syllabus', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to parse syllabus' }));
+      throw new ApiError(err.error || 'We could not parse your syllabus right now. Please try again.', res.status);
+    }
+
+    return await res.json();
+  },
 };
+

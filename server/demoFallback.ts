@@ -1,4 +1,16 @@
-import { StudyPlan, TopicExplanation, Quiz, AdaptedPlanResponse, StudyPlanRequest, ExplainRequest, QuizRequest, AdaptPlanRequest } from '../src/types/index.js';
+import {
+  StudyPlan,
+  TopicExplanation,
+  ServerQuiz,
+  AdaptedPlanResponse,
+  StudyPlanRequest,
+  ExplainRequest,
+  QuizRequest,
+  AdaptPlanRequest,
+  MistakeExplanation,
+  ParsedSyllabus,
+  ExplainMistakeRequest,
+} from '../src/types/index.js';
 
 export function generateDemoStudyPlan(req: StudyPlanRequest): StudyPlan {
   const today = new Date();
@@ -123,7 +135,7 @@ export function generateDemoExplanation(req: ExplainRequest): TopicExplanation {
   };
 }
 
-export function generateDemoQuiz(req: QuizRequest): Quiz {
+export function generateDemoQuiz(req: QuizRequest): ServerQuiz {
   const subject = req.subject || 'Computer Science';
   const topic = req.topic || 'Data Structures & Algorithms';
 
@@ -193,5 +205,65 @@ export function generateDemoAdaptedPlan(req: AdaptPlanRequest): AdaptedPlanRespo
     priorityOrder: ['Core Exam Fundamentals', 'Weak Area Remediation', 'Scheduled Spaced Practice'],
     encouragementMessage: `Missed sessions happen! Your study path is recalibrated and you are fully on track for your exam target.`,
     isDemoFallback: true,
+  };
+}
+
+export function generateDemoMistakeExplanation(req: ExplainMistakeRequest): MistakeExplanation {
+  return {
+    whatWasMisunderstood: `You chose "${req.selectedAnswer}", assuming an immediate or simplified heuristic rather than evaluating the complete structural mechanics of ${req.topic}.`,
+    whySelectedWasWrong: `Option "${req.selectedAnswer}" overlooks the required boundary constraints and state invariants defined in the problem premise.`,
+    whyCorrectWorks: `The correct answer "${req.correctAnswer}" strictly adheres to the core formal definition: each state must account for all preceding transitions without skipping intermediate verification.`,
+    simpleExample: `Consider a base instance of size N=3: selecting "${req.selectedAnswer}" would miss the edge boundary case, whereas "${req.correctAnswer}" preserves correctness across all inputs.`,
+    keyTakeaway: `Under exam pressure on ${req.topic}, always check for non-trivial edge boundaries before committing to a heuristic choice.`,
+    followUpQuestion: {
+      question: `In ${req.topic}, what is the primary defensive verification step to prevent this mistake?`,
+      options: [
+        `Explicitly evaluate the stopping condition or worst-case boundary.`,
+        `Assume average-case runtime guarantees without checking constraints.`,
+        `Omit intermediate state storage to optimize memory.`,
+        `Rely exclusively on input ordering assumptions.`,
+      ],
+      correctAnswer: `Explicitly evaluate the stopping condition or worst-case boundary.`,
+      explanation: `Explicitly verifying boundary conditions eliminates premature assumptions and guarantees deterministic correctness.`,
+    },
+  };
+}
+
+export function generateDemoParsedSyllabus(rawText: string, targetExamName?: string): ParsedSyllabus {
+  // Extract lines as topic candidates
+  const lines = rawText
+    .split(/[\n,;•\-]/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 2 && !s.toLowerCase().startsWith('syllabus') && !s.toLowerCase().startsWith('exam'));
+
+  const topicNames = lines.length >= 3 ? lines.slice(0, 8) : [
+    'Core Fundamentals & Syntax',
+    'Data Structures & Memory Models',
+    'Algorithm Analysis & Asymptotics',
+    'System Design & Problem Sets',
+  ];
+
+  const topics = topicNames.map((name, idx) => ({
+    name,
+    subtopics: [
+      `Part 1: Foundational Principles & Theorems`,
+      `Part 2: Applied Implementation & Edge Cases`,
+      `Part 3: Exam Problem Solving & Drills`,
+    ],
+    estimatedHours: 3 + (idx % 3),
+    difficulty: (idx === 0 ? 'Beginner' : idx > 3 ? 'Advanced' : 'Intermediate') as 'Beginner' | 'Intermediate' | 'Advanced',
+    keyObjectives: [
+      `Master core formulas and definitions in ${name}`,
+      `Solve 5 standard problem types without assistance`,
+    ],
+  }));
+
+  const totalEstimatedHours = topics.reduce((sum, t) => sum + t.estimatedHours, 0);
+
+  return {
+    subject: topicNames[0] ? `${topicNames[0]} & Applied Studies` : 'Computer Science & Engineering',
+    targetExamName: targetExamName || 'Final Semester Examination',
+    topics,
+    totalEstimatedHours,
   };
 }

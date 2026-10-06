@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
-import { CheckCircle2, ArrowRight, ArrowLeft, Send, AlertCircle, HelpCircle } from 'lucide-react';
-import { Quiz, QuizQuestion } from '../../types';
+import { CheckCircle2, ArrowRight, ArrowLeft, Send, AlertCircle, HelpCircle, Sparkles } from 'lucide-react';
+import { Quiz, QuizQuestion, ConfidenceLevel } from '../../types';
 import { Badge } from '../ui/Common';
 
 interface QuizRunnerProps {
   quiz: Quiz;
-  onSubmit: (userAnswers: { [questionId: string]: string }) => void;
+  onSubmit: (
+    userAnswers: { [questionId: string]: string },
+    confidenceMap?: { [questionId: string]: ConfidenceLevel }
+  ) => void;
   onCancel: () => void;
+  isSubmitting?: boolean;
 }
 
-export const QuizRunner: React.FC<QuizRunnerProps> = ({ quiz, onSubmit, onCancel }) => {
+export const QuizRunner: React.FC<QuizRunnerProps> = ({ quiz, onSubmit, onCancel, isSubmitting = false }) => {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [userAnswers, setUserAnswers] = useState<{ [questionId: string]: string }>({});
+  const [confidenceMap, setConfidenceMap] = useState<{ [questionId: string]: ConfidenceLevel }>({});
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const currentQ: QuizQuestion = quiz.questions[currentIdx];
@@ -23,6 +28,13 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({ quiz, onSubmit, onCancel
       ...prev,
       [currentQ.id]: option,
     }));
+    // Default confidence to Medium if not already set
+    if (!confidenceMap[currentQ.id]) {
+      setConfidenceMap((prev) => ({
+        ...prev,
+        [currentQ.id]: 'Medium',
+      }));
+    }
     setValidationError(null);
   };
 
@@ -51,7 +63,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({ quiz, onSubmit, onCancel
       setValidationError(`Please answer all questions before submitting (${unanswered.length} remaining).`);
       return;
     }
-    onSubmit(userAnswers);
+    onSubmit(userAnswers, confidenceMap);
   };
 
   const answeredCount = Object.keys(userAnswers).length;
@@ -137,6 +149,43 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({ quiz, onSubmit, onCancel
             );
           })}
         </fieldset>
+
+        {/* Metacognitive Confidence Selector */}
+        <div className="pt-2 p-3.5 bg-slate-50/80 rounded-xl border border-slate-200/70 space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold text-slate-700 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+              How confident are you in this answer?
+            </span>
+            <span className="text-[11px] text-slate-500 font-medium">Metacognitive calibration</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {(['Low', 'Medium', 'High'] as const).map((level) => {
+              const currentLevel = confidenceMap[currentQ.id] || 'Medium';
+              const isSelected = currentLevel === level;
+              return (
+                <button
+                  key={level}
+                  type="button"
+                  onClick={() => setConfidenceMap((prev) => ({ ...prev, [currentQ.id]: level }))}
+                  className={`py-1.5 px-3 rounded-lg text-xs font-semibold border transition-all text-center ${
+                    isSelected
+                      ? level === 'High'
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs ring-1 ring-emerald-600'
+                        : level === 'Medium'
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs ring-1 ring-indigo-600'
+                        : 'bg-amber-600 text-white border-amber-600 shadow-xs ring-1 ring-amber-600'
+                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-800'
+                  }`}
+                >
+                  {level === 'Low' && 'Low (Unsure)'}
+                  {level === 'Medium' && 'Medium (Fair)'}
+                  {level === 'High' && 'High (Certain)'}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* Navigation Footer */}
@@ -171,9 +220,19 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({ quiz, onSubmit, onCancel
             <button
               type="button"
               onClick={handleSubmitAll}
-              className="px-6 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg flex items-center gap-1.5 shadow-xs focus-visible:outline-2 focus-visible:outline-emerald-600"
+              disabled={isSubmitting}
+              className="px-6 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-lg flex items-center gap-1.5 shadow-xs focus-visible:outline-2 focus-visible:outline-emerald-600"
             >
-              <Send className="w-4 h-4" /> Submit & Score
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Scoring Assessment...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" /> Submit & Score
+                </>
+              )}
             </button>
           )}
         </div>

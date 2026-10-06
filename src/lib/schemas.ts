@@ -79,3 +79,44 @@ export const AdaptedPlanResponseSchema = z.object({
   priorityOrder: z.array(z.string()),
   encouragementMessage: z.string(),
 });
+
+export const ConfidenceLevelSchema = z.enum(['Low', 'Medium', 'High']);
+
+export const MistakeCategorySchema = z.enum([
+  'Conceptual',
+  'Calculation',
+  'Syntax',
+  'Misreading',
+  'Recall',
+  'Careless',
+]);
+
+export const MistakeExplanationSchema = z.object({
+  whatWasMisunderstood: z.string(),
+  whySelectedWasWrong: z.string(),
+  whyCorrectWorks: z.string(),
+  simpleExample: z.string(),
+  keyTakeaway: z.string(),
+  followUpQuestion: z.object({
+    question: z.string(),
+    options: z.array(z.string()).length(4),
+    correctAnswer: z.string(),
+    explanation: z.string(),
+  }).optional(),
+});
+
+export const ParsedSyllabusTopicSchema = z.object({
+  name: z.string(),
+  subtopics: z.array(z.string()).default([]),
+  estimatedHours: z.number().min(0.5).max(100).default(3),
+  difficulty: StudyLevelSchema.default('Intermediate'),
+  keyObjectives: z.array(z.string()).optional().default([]),
+});
+
+export const ParsedSyllabusSchema = z.object({
+  subject: z.string(),
+  targetExamName: z.string().optional().default('Final Exam'),
+  topics: z.array(ParsedSyllabusTopicSchema).min(1),
+  totalEstimatedHours: z.number().min(1),
+});
+

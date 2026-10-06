@@ -16,7 +16,7 @@ import { useStorage } from '../hooks/useStorage';
 import { QuizRunner } from '../components/quiz/QuizRunner';
 import { QuizResultView } from '../components/quiz/QuizResultView';
 import { Banner } from '../components/layout/Banner';
-import { Quiz, QuizResult, StudyLevel } from '../types';
+import { Quiz, QuizResult, StudyLevel, ConfidenceLevel } from '../types';
 import { Badge } from '../components/ui/Common';
 
 export const QuizPage: React.FC = () => {
@@ -31,6 +31,7 @@ export const QuizPage: React.FC = () => {
   const [questionCount, setQuestionCount] = useState<number>(4);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentQuiz, setCurrentQuiz] = useState<Quiz | null>(null);
   const [currentResult, setCurrentResult] = useState<QuizResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -68,47 +69,46 @@ export const QuizPage: React.FC = () => {
     }
   };
 
-  const handleQuizSubmit = (userAnswers: { [questionId: string]: string }) => {
+  const handleQuizSubmit = async (
+    userAnswers: { [questionId: string]: string },
+    confidenceMap?: { [questionId: string]: ConfidenceLevel }
+  ) => {
     if (!currentQuiz) return;
 
-    let score = 0;
-    const total = currentQuiz.questions.length;
+    setIsSubmitting(true);
+    setError(null);
 
-    currentQuiz.questions.forEach((q) => {
-      if (userAnswers[q.id] === q.correctAnswer) {
-        score += 1;
-      }
-    });
+    try {
+      const serverResult = await ApiClient.submitQuiz({
+        quizId: currentQuiz.id,
+        userAnswers,
+        confidenceMap,
+      });
 
-    const percentage = Math.round((score / total) * 100);
+      const result: QuizResult = {
+        id: `result-${Date.now()}`,
+        quizId: serverResult.quizId,
+        subject: serverResult.subject,
+        topic: serverResult.topic,
+        difficulty: serverResult.difficulty,
+        score: serverResult.score,
+        totalQuestions: serverResult.totalQuestions,
+        percentage: serverResult.percentage,
+        userAnswers: serverResult.userAnswers,
+        completedAt: serverResult.completedAt,
+        improvementRecommendation: serverResult.improvementRecommendation,
+        reviewQuestions: serverResult.reviewQuestions,
+        confidenceMap,
+        confidenceInsights: serverResult.confidenceInsights,
+      };
 
-    let recommendation = '';
-    if (percentage === 100) {
-      recommendation = `Flawless score! You have solid mastery of ${currentQuiz.topic}. Try advancing to ${currentQuiz.difficulty === 'Advanced' ? 'higher-level competitive problems' : 'Advanced difficulty'}.`;
-    } else if (percentage >= 75) {
-      recommendation = `Strong conceptual foundation! Review the explanations for your missed questions and attempt a 5-minute active recall recap.`;
-    } else if (percentage >= 50) {
-      recommendation = `Good effort. We detected knowledge gaps in ${currentQuiz.topic}. Use the Explain Topic module to review step-by-step mechanisms and analogies before retaking.`;
-    } else {
-      recommendation = `Foundational revision recommended. Study the full topic breakdown in the Explainer module, focus on common mistakes, and retry in 24 hours.`;
+      saveQuizResult(result);
+      setCurrentResult(result);
+    } catch (err: any) {
+      setError(err?.message || 'We could not score your quiz right now. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const result: QuizResult = {
-      id: `result-${Date.now()}`,
-      quizId: currentQuiz.id,
-      subject: currentQuiz.subject,
-      topic: currentQuiz.topic,
-      difficulty: currentQuiz.difficulty,
-      score,
-      totalQuestions: total,
-      percentage,
-      userAnswers,
-      completedAt: new Date().toISOString(),
-      improvementRecommendation: recommendation,
-    };
-
-    saveQuizResult(result);
-    setCurrentResult(result);
   };
 
   const handleRetake = () => {
@@ -179,6 +179,7 @@ export const QuizPage: React.FC = () => {
           quiz={currentQuiz}
           onSubmit={handleQuizSubmit}
           onCancel={handleNewQuiz}
+          isSubmitting={isSubmitting}
         />
       ) : showHistory ? (
         /* Quiz History Table */
