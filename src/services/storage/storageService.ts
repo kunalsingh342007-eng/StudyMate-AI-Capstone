@@ -16,6 +16,8 @@ import {
   PYQAnalysisResult,
   MockExamSession,
   TutorMessage,
+  StudyNote,
+  UserProfile,
 } from '../../types';
 import { MasteryEngine } from '../learning/masteryEngine';
 import { FlashcardEngine } from '../learning/flashcardEngine';
@@ -37,6 +39,8 @@ const STORAGE_KEYS = {
   PYQ_ANALYSES: 'studymate_pyq_analyses',
   MOCK_EXAMS: 'studymate_mock_exams',
   TUTOR_CHAT: 'studymate_tutor_chat',
+  NOTES: 'studymate_notes',
+  USER_PROFILE: 'studymate_user_profile',
 };
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -61,6 +65,96 @@ const DEFAULT_PROGRESS: StudyProgress = {
   weakTopicsIdentified: [],
   masteredTopics: [],
 };
+
+const DEFAULT_USER_PROFILE: UserProfile = {
+  id: 'user-default',
+  name: 'Alex Rivera',
+  email: 'alex.rivera@university.edu',
+  academicLevel: 'Undergraduate Senior',
+  institution: 'School of Computer Science & Engineering',
+  targetExam: 'Semester Finals / Tech Exam',
+  targetExamDate: new Date(Date.now() + 18 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+  bio: 'Computer Science senior focused on systems architecture, algorithm mastery, and operating systems.',
+  dailyGoalHours: 3,
+  streakDays: 7,
+  totalStudyMinutes: 1590,
+  quizzesCompleted: 14,
+};
+
+const SEED_NOTES: StudyNote[] = [
+  {
+    id: 'note-1',
+    title: 'Dynamic Programming: Memoization vs Tabulation',
+    subject: 'Computer Science Core',
+    topic: 'Dynamic Programming',
+    content: `# Dynamic Programming: Memoization vs Tabulation
+
+## 1. Top-Down (Memoization)
+- Recursion with an auxiliary cache (dictionary or lookup array).
+- Solves subproblems on-demand only when needed.
+- Intuitive to formulate directly from recurrence mathematical relations.
+- Overhead: Recursive function call stack space O(N).
+
+\`\`\`python
+memo = {}
+def fib(n):
+    if n <= 1: return n
+    if n not in memo:
+        memo[n] = fib(n - 1) + fib(n - 2)
+    return memo[n]
+\`\`\`
+
+## 2. Bottom-Up (Tabulation)
+- Iteratively fills an N-dimensional table from base cases upward.
+- Eliminates recursive stack overhead.
+- Space optimization: can reduce space to O(1) when only prior states are retained!`,
+    tags: ['Algorithms', 'DP', 'Complexity'],
+    isPinned: true,
+    createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+    updatedAt: new Date(Date.now() - 86400000).toISOString(),
+  },
+  {
+    id: 'note-2',
+    title: 'Operating Systems: CPU Scheduling Quick Cheatsheet',
+    subject: 'Operating Systems',
+    topic: 'Process Scheduling',
+    content: `# CPU Scheduling Summary
+
+### FCFS (First-Come, First-Served)
+- Non-preemptive FIFO queue.
+- Major pitfall: Convoy Effect where short burst jobs wait behind heavy CPU tasks.
+
+### SJF / SRTF
+- Proven minimal average waiting time.
+- Requires predicting future burst time using exponential moving average:
+  τ_{n+1} = α t_n + (1 - α) τ_n
+
+### Round Robin (RR)
+- Preemptive time quantum slicing.
+- If quantum is huge -> degrades to FCFS.
+- If quantum is tiny -> severe context switch overhead.`,
+    tags: ['Operating Systems', 'Scheduling', 'Exam Prep'],
+    isPinned: false,
+    createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+    updatedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+  },
+  {
+    id: 'note-3',
+    title: 'Database Systems: ACID Properties & Transactions',
+    subject: 'Database Systems',
+    topic: 'Transactions',
+    content: `# ACID Properties in DBMS
+
+1. **Atomicity**: All-or-nothing execution. Partial executions roll back to original state.
+2. **Consistency**: Invariants and integrity constraints remain preserved across transactions.
+3. **Isolation**: Concurrently executing transactions do not interfere; serializability is the gold standard.
+4. **Durability**: Committed data persists across server reboot/crash via Write-Ahead Logging (WAL).`,
+    tags: ['DBMS', 'ACID', 'Transactions'],
+    isPinned: false,
+    createdAt: new Date(Date.now() - 7 * 86400000).toISOString(),
+    updatedAt: new Date(Date.now() - 4 * 86400000).toISOString(),
+  },
+];
 
 function notifyChange() {
   if (typeof window !== 'undefined') {
@@ -1019,6 +1113,16 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
           { year: '2023', topTopics: ['BSTs', 'Dynamic Programming', 'Dijkstra'] },
         ],
       });
+
+      // Seed initial notes if empty
+      if (!localStorage.getItem(STORAGE_KEYS.NOTES)) {
+        localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(SEED_NOTES));
+      }
+
+      // Seed initial user profile if empty
+      if (!localStorage.getItem(STORAGE_KEYS.USER_PROFILE)) {
+        localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(DEFAULT_USER_PROFILE));
+      }
     }
   },
 
@@ -1219,6 +1323,80 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
     }
   },
 
+  // --- Study Notes ---
+  getNotes(): StudyNote[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.NOTES);
+      return data ? JSON.parse(data) : SEED_NOTES;
+    } catch (e) {
+      return SEED_NOTES;
+    }
+  },
+
+  saveNote(note: StudyNote): void {
+    try {
+      const notes = this.getNotes();
+      const existingIdx = notes.findIndex((n) => n.id === note.id);
+      if (existingIdx !== -1) {
+        notes[existingIdx] = { ...note, updatedAt: new Date().toISOString() };
+      } else {
+        notes.unshift(note);
+      }
+      localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(notes));
+      notifyChange();
+    } catch (e) {
+      console.error('Failed to save study note', e);
+    }
+  },
+
+  deleteNote(id: string): void {
+    try {
+      const notes = this.getNotes().filter((n) => n.id !== id);
+      localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(notes));
+      notifyChange();
+    } catch (e) {
+      console.error('Failed to delete note', e);
+    }
+  },
+
+  togglePinNote(id: string): void {
+    try {
+      const notes = this.getNotes().map((n) =>
+        n.id === id ? { ...n, isPinned: !n.isPinned, updatedAt: new Date().toISOString() } : n
+      );
+      localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(notes));
+      notifyChange();
+    } catch (e) {
+      console.error('Failed to toggle pin on note', e);
+    }
+  },
+
+  // --- Student Profile ---
+  getUserProfile(): UserProfile {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.USER_PROFILE);
+      if (data) {
+        return JSON.parse(data);
+      }
+      return DEFAULT_USER_PROFILE;
+    } catch (e) {
+      return DEFAULT_USER_PROFILE;
+    }
+  },
+
+  saveUserProfile(profile: Partial<UserProfile>): UserProfile {
+    try {
+      const current = this.getUserProfile();
+      const updated: UserProfile = { ...current, ...profile };
+      localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(updated));
+      notifyChange();
+      return updated;
+    } catch (e) {
+      console.error('Failed to save user profile', e);
+      return DEFAULT_USER_PROFILE;
+    }
+  },
+
   clearAllData(): void {
     Object.values(STORAGE_KEYS).forEach((k) => localStorage.removeItem(k));
     notifyChange();
@@ -1255,6 +1433,8 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
       if (data.PYQ_ANALYSES) localStorage.setItem(STORAGE_KEYS.PYQ_ANALYSES, JSON.stringify(data.PYQ_ANALYSES));
       if (data.MOCK_EXAMS) localStorage.setItem(STORAGE_KEYS.MOCK_EXAMS, JSON.stringify(data.MOCK_EXAMS));
       if (data.TUTOR_CHAT) localStorage.setItem(STORAGE_KEYS.TUTOR_CHAT, JSON.stringify(data.TUTOR_CHAT));
+      if (data.NOTES) localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(data.NOTES));
+      if (data.USER_PROFILE) localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(data.USER_PROFILE));
       this.recalculateProgress();
       notifyChange();
       return true;

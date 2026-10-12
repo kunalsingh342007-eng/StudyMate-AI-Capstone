@@ -7,13 +7,17 @@ import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
+import { AppShell } from './components/layout/AppShell';
 import { LandingPage } from './pages/LandingPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { PlannerPage } from './pages/PlannerPage';
 import { ExplainPage } from './pages/ExplainPage';
 import { QuizPage } from './pages/QuizPage';
 import { ProgressPage } from './pages/ProgressPage';
+import { NotesPage } from './pages/NotesPage';
+import { ProfilePage } from './pages/ProfilePage';
 import { SettingsPage } from './pages/SettingsPage';
+import { LoginPage } from './pages/LoginPage';
 import { StorageService } from './services/storage/storageService';
 
 export default function App() {
@@ -24,35 +28,102 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-[#F4F1EA] text-[#0B1720] flex flex-col font-sans selection:bg-[#1A5C7A] selection:text-white">
-        {/* WCAG Skip to Main Content Link */}
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:bg-[#1A5C7A] focus:text-white focus:rounded-lg focus:shadow-lg focus:outline-none"
-        >
-          Skip to main content
-        </a>
+      {/* WCAG Skip to Main Content Link */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:bg-purple-600 focus:text-white focus:rounded-lg focus:shadow-lg focus:outline-none"
+      >
+        Skip to main content
+      </a>
 
-        {/* Global Navigation */}
-        <Navbar />
+      <Routes>
+        {/* Landing / Marketing Page */}
+        <Route
+          path="/"
+          element={
+            <div className="min-h-screen bg-[#F8F7FC] text-[#1E1B4B] flex flex-col font-sans selection:bg-purple-600 selection:text-white">
+              <Navbar />
+              <main id="main-content" className="flex-1 w-full">
+                <LandingPage />
+              </main>
+              <Footer />
+            </div>
+          }
+        />
 
-        {/* Main Content Area */}
-        <main id="main-content" className="flex-1 w-full">
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/planner" element={<PlannerPage />} />
-            <Route path="/explain" element={<ExplainPage />} />
-            <Route path="/quiz" element={<QuizPage />} />
-            <Route path="/progress" element={<ProgressPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </main>
+        {/* Dedicated Login / Auth Page */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/auth" element={<Navigate to="/login" replace />} />
 
-        {/* Global Footer */}
-        <Footer />
-      </div>
+        {/* Workspace Pages with deep purple & indigo Sidebar and AppHeader */}
+        <Route
+          path="/dashboard"
+          element={
+            <AppShell>
+              <DashboardPage />
+            </AppShell>
+          }
+        />
+        <Route
+          path="/planner"
+          element={
+            <AppShell>
+              <PlannerPage />
+            </AppShell>
+          }
+        />
+        <Route
+          path="/explain"
+          element={
+            <AppShell>
+              <ExplainPage />
+            </AppShell>
+          }
+        />
+        <Route
+          path="/quiz"
+          element={
+            <AppShell>
+              <QuizPage />
+            </AppShell>
+          }
+        />
+        <Route
+          path="/progress"
+          element={
+            <AppShell>
+              <ProgressPage />
+            </AppShell>
+          }
+        />
+        <Route
+          path="/notes"
+          element={
+            <AppShell>
+              <NotesPage />
+            </AppShell>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <AppShell>
+              <ProfilePage />
+            </AppShell>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <AppShell>
+              <SettingsPage />
+            </AppShell>
+          }
+        />
+
+        {/* Fallback route */}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
     </BrowserRouter>
   );
 }

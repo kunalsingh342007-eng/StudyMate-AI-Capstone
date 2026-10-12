@@ -47,17 +47,17 @@ export const ProgressPage: React.FC = () => {
   const displayedMistakes = mistakes.filter((m) => (filterResolved ? true : !m.resolved));
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-8">
+    <div className="max-w-6xl mx-auto space-y-8">
       {/* Header */}
-      <div className="border-b border-[#E2DDD2] pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="border-b border-purple-100/80 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-[#6B747A] font-mono">
+          <span className="text-xs font-bold uppercase tracking-wider text-purple-600 font-mono">
             ACADEMIC ANALYTICS &bull; STUDY INTELLIGENCE
           </span>
-          <h1 className="text-2xl sm:text-4xl font-extrabold text-[#0B1720] tracking-tight">
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-[#1E1B4B] tracking-tight mt-1">
             Learning Progress & Mastery
           </h1>
-          <p className="text-xs sm:text-sm text-[#6B747A] mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Real-time tracking of topic mastery scores, mistake patterns, and spaced retrieval intervals
           </p>
         </div>
@@ -272,7 +272,7 @@ export const ProgressPage: React.FC = () => {
                         </span>
                         <Link
                           to={item.actionRoute}
-                          className="font-bold text-[#1A5C7A] hover:text-[#207297] flex items-center gap-0.5 whitespace-nowrap"
+                          className="font-bold text-purple-600 hover:text-purple-800 flex items-center gap-0.5 whitespace-nowrap"
                         >
                           Remediate &rarr;
                         </Link>

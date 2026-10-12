@@ -101,27 +101,27 @@ export const QuizResultView: React.FC<QuizResultViewProps> = ({
   return (
     <div className="space-y-6 max-w-3xl mx-auto animate-in fade-in duration-200">
       {/* Score Summary Card */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xs text-center space-y-4">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-xs">
+      <div className="bg-white rounded-3xl border border-purple-100 p-6 sm:p-8 shadow-xs text-center space-y-4">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-purple-50 text-purple-600 border border-purple-100 shadow-xs">
           {result.percentage >= 80 ? (
             <Trophy className="w-8 h-8 text-amber-500" />
           ) : isPassing ? (
-            <Award className="w-8 h-8 text-indigo-600" />
+            <Award className="w-8 h-8 text-purple-600" />
           ) : (
             <HelpCircle className="w-8 h-8 text-slate-500" />
           )}
         </div>
 
         <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">Quiz Completed!</h2>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1E1B4B]">Quiz Completed!</h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
             {quiz.subject} &bull; {quiz.topic} ({quiz.difficulty} Level)
           </p>
         </div>
 
         {/* Big Score Box */}
-        <div className="inline-flex flex-col items-center justify-center p-4 sm:p-6 rounded-2xl bg-slate-50 border border-slate-200 min-w-[200px]">
-          <div className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight">
+        <div className="inline-flex flex-col items-center justify-center p-4 sm:p-6 rounded-3xl bg-[#F8F7FC] border border-purple-100 min-w-[200px]">
+          <div className="text-4xl sm:text-5xl font-black text-[#1E1B4B] tracking-tight">
             {result.percentage}%
           </div>
           <span className="text-xs sm:text-sm font-semibold text-slate-600 mt-1">
@@ -131,28 +131,28 @@ export const QuizResultView: React.FC<QuizResultViewProps> = ({
 
         {/* Confidence Calibration Bar */}
         {confidenceInsights && (
-          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-left space-y-2">
+          <div className="p-4 rounded-2xl bg-[#F8F7FC] border border-purple-100 text-left space-y-2">
             <div className="flex items-center justify-between text-xs font-semibold text-slate-800">
               <span className="flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                <Sparkles className="w-3.5 h-3.5 text-purple-600" />
                 Metacognitive Calibration
               </span>
               <span className="text-slate-500 font-normal">{confidenceInsights.overallAlignment}</span>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center text-xs">
-              <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200/80">
+              <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/80">
                 <span className="block font-bold text-emerald-800 text-sm">
                   {confidenceInsights.strongMasteryCount}
                 </span>
                 <span className="text-[11px] text-emerald-700 font-medium">Strong Mastery</span>
               </div>
-              <div className="p-2 rounded-lg bg-rose-50 border border-rose-200/80">
+              <div className="p-2 rounded-xl bg-rose-50 border border-rose-200/80">
                 <span className="block font-bold text-rose-800 text-sm">
                   {confidenceInsights.misconceptionsCount}
                 </span>
                 <span className="text-[11px] text-rose-700 font-medium">Misconceptions</span>
               </div>
-              <div className="p-2 rounded-lg bg-amber-50 border border-amber-200/80">
+              <div className="p-2 rounded-xl bg-amber-50 border border-amber-200/80">
                 <span className="block font-bold text-amber-800 text-sm">
                   {confidenceInsights.unconfidentCount}
                 </span>
@@ -163,9 +163,9 @@ export const QuizResultView: React.FC<QuizResultViewProps> = ({
         )}
 
         {/* Improvement Recommendation */}
-        <div className="text-left p-4 rounded-xl bg-indigo-50/70 border border-indigo-100 text-xs sm:text-sm text-slate-800 space-y-1">
-          <span className="font-semibold text-indigo-950 flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-indigo-600" />
+        <div className="text-left p-4 rounded-2xl bg-purple-50/70 border border-purple-100 text-xs sm:text-sm text-slate-800 space-y-1">
+          <span className="font-semibold text-purple-950 flex items-center gap-1.5">
+            <Sparkles className="w-4 h-4 text-purple-600" />
             Personalized Study Recommendation:
           </span>
           <p className="text-slate-700 leading-relaxed pl-5.5">{result.improvementRecommendation}</p>
@@ -176,7 +176,7 @@ export const QuizResultView: React.FC<QuizResultViewProps> = ({
           <button
             type="button"
             onClick={onRetake}
-            className="px-5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl flex items-center gap-2 transition-colors focus-visible:outline-2 focus-visible:outline-indigo-600"
+            className="px-5 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 bg-white border border-purple-200 hover:bg-purple-50 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
           >
             <RotateCcw className="w-4 h-4" /> Retake This Quiz
           </button>
@@ -184,7 +184,7 @@ export const QuizResultView: React.FC<QuizResultViewProps> = ({
           <button
             type="button"
             onClick={onNewQuiz}
-            className="px-6 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs flex items-center gap-2 transition-colors focus-visible:outline-2 focus-visible:outline-indigo-600"
+            className="px-6 py-2.5 text-xs sm:text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 active:scale-[0.98] rounded-xl shadow-md shadow-purple-600/30 flex items-center gap-2 transition-all cursor-pointer"
           >
             Generate New Quiz <ArrowRight className="w-4 h-4" />
           </button>

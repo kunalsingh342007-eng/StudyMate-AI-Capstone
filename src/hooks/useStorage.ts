@@ -16,6 +16,8 @@ import {
   PYQAnalysisResult,
   MockExamSession,
   TutorMessage,
+  StudyNote,
+  UserProfile,
 } from '../types';
 
 export function useStorage() {
@@ -34,6 +36,8 @@ export function useStorage() {
   const [pyqAnalyses, setPyqAnalysesState] = useState<PYQAnalysisResult[]>(() => StorageService.getPYQAnalyses());
   const [mockExams, setMockExamsState] = useState<MockExamSession[]>(() => StorageService.getMockExams());
   const [tutorMessages, setTutorMessagesState] = useState<TutorMessage[]>(() => StorageService.getTutorMessages());
+  const [notes, setNotesState] = useState<StudyNote[]>(() => StorageService.getNotes());
+  const [userProfile, setUserProfileState] = useState<UserProfile>(() => StorageService.getUserProfile());
 
   const syncFromStorage = useCallback(() => {
     setActivePlanState(StorageService.getActivePlan());
@@ -51,6 +55,8 @@ export function useStorage() {
     setPyqAnalysesState(StorageService.getPYQAnalyses());
     setMockExamsState(StorageService.getMockExams());
     setTutorMessagesState(StorageService.getTutorMessages());
+    setNotesState(StorageService.getNotes());
+    setUserProfileState(StorageService.getUserProfile());
   }, []);
 
   useEffect(() => {
@@ -146,6 +152,22 @@ export function useStorage() {
     StorageService.clearTutorChat();
   }, []);
 
+  const saveNote = useCallback((note: StudyNote) => {
+    StorageService.saveNote(note);
+  }, []);
+
+  const deleteNote = useCallback((id: string) => {
+    StorageService.deleteNote(id);
+  }, []);
+
+  const togglePinNote = useCallback((id: string) => {
+    StorageService.togglePinNote(id);
+  }, []);
+
+  const saveUserProfile = useCallback((profile: Partial<UserProfile>) => {
+    return StorageService.saveUserProfile(profile);
+  }, []);
+
   return {
     activePlan,
     savedPlans,
@@ -163,6 +185,8 @@ export function useStorage() {
     latestPYQAnalysis: pyqAnalyses[0] || null,
     mockExams,
     tutorMessages,
+    notes,
+    userProfile,
     setActivePlan,
     updateTaskStatus,
     updateTaskNotes,
@@ -182,6 +206,10 @@ export function useStorage() {
     saveMockExam,
     saveTutorMessage,
     clearTutorChat,
+    saveNote,
+    deleteNote,
+    togglePinNote,
+    saveUserProfile,
     exportDataJson: StorageService.exportDataJson,
     importDataJson: StorageService.importDataJson,
     refresh: syncFromStorage,

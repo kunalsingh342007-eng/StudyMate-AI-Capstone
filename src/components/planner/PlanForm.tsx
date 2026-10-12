@@ -83,20 +83,20 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-xs space-y-6">
-      <div className="border-b border-slate-100 pb-4">
-        <h2 className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2">
-          <BookOpen className="w-5 h-5 text-indigo-600" />
+    <form onSubmit={handleSubmit} className="bg-white rounded-3xl border border-purple-100 p-6 sm:p-8 shadow-xs space-y-6">
+      <div className="border-b border-purple-100 pb-4">
+        <h2 className="text-lg sm:text-xl font-bold text-[#1E1B4B] flex items-center gap-2">
+          <BookOpen className="w-5 h-5 text-purple-600" />
           Create New AI Study Schedule
         </h2>
         <p className="text-xs sm:text-sm text-slate-500 mt-1">
-          Claude will analyze your syllabus, balance spaced repetition, and allocate time based strictly on your available capacity.
+          StudyMate AI analyzes your syllabus, balances spaced retrieval intervals, and allocates study blocks strictly around your available capacity.
         </p>
       </div>
 
       {formError && (
-        <div role="alert" className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs sm:text-sm text-rose-700 flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 text-rose-600 mt-0.5 flex-shrink-0" />
+        <div role="alert" className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-xs sm:text-sm text-rose-700 flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 text-rose-600 mt-0.5 shrink-0" />
           <span>{formError}</span>
         </div>
       )}
@@ -114,8 +114,8 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading }) => {
             required
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
-            placeholder="e.g. Data Structures & Algorithms, Organic Chemistry, Microeconomics"
-            className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:outline-indigo-600 focus:border-indigo-600"
+            placeholder="e.g. Data Structures & Algorithms, Operating Systems, Computer Networks"
+            className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600 focus:border-purple-600"
           />
         </div>
 
@@ -131,10 +131,10 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading }) => {
             value={topicsInput}
             onChange={(e) => setTopicsInput(e.target.value)}
             placeholder="e.g. Sorting, Binary Search Trees, Graphs, Dynamic Programming"
-            className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:outline-indigo-600 focus:border-indigo-600"
+            className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600 focus:border-purple-600"
           />
           <span className="text-[11px] text-slate-500 block">
-            List individual modules or chapter titles. Claude breaks each into actionable subtopics.
+            List individual modules or chapter titles. StudyMate AI breaks each into actionable subtopics.
           </span>
         </div>
 
@@ -150,7 +150,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading }) => {
               required
               value={examDate}
               onChange={(e) => setExamDate(e.target.value)}
-              className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:outline-indigo-600 focus:border-indigo-600"
+              className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600 focus:border-purple-600"
             />
           </div>
         </div>
@@ -170,7 +170,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading }) => {
               required
               value={dailyHours}
               onChange={(e) => setDailyHours(parseFloat(e.target.value) || 1)}
-              className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:outline-indigo-600 focus:border-indigo-600"
+              className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600 focus:border-purple-600"
             />
             <span className="text-xs text-slate-500 font-medium whitespace-nowrap">hours / day</span>
           </div>
@@ -185,7 +185,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading }) => {
             id="planner-level"
             value={level}
             onChange={(e) => setLevel(e.target.value as StudyLevel)}
-            className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:outline-indigo-600 focus:border-indigo-600"
+            className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600 focus:border-purple-600"
           >
             <option value="Beginner">Beginner (Starting from scratch / fundamentals)</option>
             <option value="Intermediate">Intermediate (Familiar with core concepts)</option>
@@ -204,7 +204,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading }) => {
             value={weakTopicsInput}
             onChange={(e) => setWeakTopicsInput(e.target.value)}
             placeholder="e.g. Dynamic Programming, Red-Black Trees"
-            className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:outline-indigo-600 focus:border-indigo-600"
+            className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600 focus:border-purple-600"
           />
         </div>
 
@@ -221,10 +221,10 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading }) => {
                   key={day}
                   type="button"
                   onClick={() => toggleDay(day)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors focus-visible:outline-2 focus-visible:outline-indigo-600 ${
+                  className={`px-3 py-1.5 text-xs font-medium rounded-xl border transition-colors cursor-pointer ${
                     isSelected
-                      ? 'bg-indigo-600 text-white border-indigo-600'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                      ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                      : 'bg-white text-slate-600 border-purple-200 hover:border-purple-300'
                   }`}
                   aria-pressed={isSelected}
                 >
@@ -237,7 +237,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading }) => {
       </div>
 
       {/* Submit Button */}
-      <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+      <div className="pt-3 border-t border-purple-100 flex items-center justify-between">
         <span className="text-xs text-slate-500 hidden sm:block">
           Evidence-informed schedule with spaced repetition built-in
         </span>
@@ -245,7 +245,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading }) => {
           id="generate-plan-submit-btn"
           type="submit"
           disabled={isLoading}
-          className="w-full sm:w-auto px-6 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-indigo-600"
+          className="w-full sm:w-auto px-6 py-2.5 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 active:scale-[0.98] rounded-xl shadow-md shadow-purple-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
         >
           {isLoading ? (
             <>

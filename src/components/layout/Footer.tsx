@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Calendar,
+  GraduationCap,
   Twitter,
   Instagram,
   Youtube,
@@ -25,24 +25,29 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="bg-[#071923] border-t border-[#132F3E] text-slate-400 text-sm mt-auto">
+    <footer className="bg-[#140D26] border-t border-white/10 text-slate-400 text-sm mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
           {/* Brand Col */}
           <div className="lg:col-span-2 space-y-4">
             <Link to="/" className="flex items-center gap-3 group inline-block">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0F364C] to-[#0A2433] border border-[#204E68] text-sky-400 flex items-center justify-center shadow-inner">
-                <Calendar className="w-5 h-5" />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-purple-600/30">
+                <GraduationCap className="w-5 h-5 text-white" />
               </div>
               <div className="flex flex-col">
-                <span className="text-xl font-bold tracking-tight text-white">StudyMate</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xl font-bold tracking-tight text-white">StudyMate</span>
+                  <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-400/30 rounded-md">
+                    AI
+                  </span>
+                </div>
                 <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wide">
-                  Personal Study Planner
+                  Academic Copilot
                 </span>
               </div>
             </Link>
             <p className="text-sm text-slate-400 max-w-sm leading-relaxed">
-              Study smarter. Stay ahead. The personal study companion that turns ambitious syllabi into realistic daily progress.
+              Study smarter. Stay ahead. The personal academic copilot that turns complex syllabi and learning materials into mastery and exam readiness.
             </p>
 
             {/* Social Icons */}

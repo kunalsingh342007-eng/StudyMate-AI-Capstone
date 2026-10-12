@@ -11,6 +11,7 @@ import {
   X,
   ArrowRight,
   Bookmark,
+  GraduationCap,
 } from 'lucide-react';
 import { useAIStatus } from '../../hooks/useAIStatus';
 
@@ -43,8 +44,8 @@ export const Navbar: React.FC = () => {
     <header
       className={`sticky top-0 z-50 transition-all duration-300 ${
         scrolled
-          ? 'bg-[#071923]/95 backdrop-blur-md border-b border-[#143242] shadow-lg shadow-black/20'
-          : 'bg-[#071923] border-b border-[#0F2836]'
+          ? 'bg-[#160F2C]/95 backdrop-blur-md border-b border-white/10 shadow-lg shadow-black/20'
+          : 'bg-[#19112E] border-b border-white/10'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -52,21 +53,23 @@ export const Navbar: React.FC = () => {
           {/* Brand & Logo */}
           <Link
             to="/"
-            className="flex items-center gap-3 group focus-visible:outline-2 focus-visible:outline-sky-400 rounded-lg"
-            aria-label="StudyMate - Personal Study Planner"
+            className="flex items-center gap-3 group focus-visible:outline-2 focus-visible:outline-purple-400 rounded-lg"
+            aria-label="StudyMate - Personal Academic Copilot"
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0F364C] to-[#0A2433] border border-[#204E68] text-sky-400 flex items-center justify-center shadow-inner group-hover:border-sky-400/60 transition-all">
-              <div className="relative">
-                <Calendar className="w-5 h-5" />
-                <span className="absolute -bottom-1 -right-1 w-2 h-2 rounded-full bg-sky-400" />
-              </div>
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-purple-600/30 group-hover:scale-105 transition-transform">
+              <GraduationCap className="w-5 h-5 text-white" />
             </div>
             <div className="flex flex-col">
-              <span className="text-xl font-bold tracking-tight text-white flex items-center gap-1.5 font-sans">
-                StudyMate
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xl font-extrabold tracking-tight text-white flex items-center gap-1.5 font-sans">
+                  StudyMate
+                </span>
+                <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-400/30 rounded-md">
+                  AI
+                </span>
+              </div>
               <span className="text-[11px] font-medium text-slate-400 tracking-wide uppercase">
-                Personal Study Planner
+                Academic Copilot
               </span>
             </div>
           </Link>
@@ -82,7 +85,7 @@ export const Navbar: React.FC = () => {
                   <a
                     key={item.path}
                     href={item.path}
-                    className="px-3.5 py-1.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-[#0E2838] rounded-lg transition-colors"
+                    className="px-3.5 py-1.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-white/10 rounded-xl transition-colors"
                   >
                     {item.label}
                   </a>
@@ -93,10 +96,10 @@ export const Navbar: React.FC = () => {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`px-3.5 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                  className={`px-3.5 py-1.5 text-sm font-medium rounded-xl transition-all ${
                     isActive
-                      ? 'text-white bg-[#113144] border border-[#1E4D68] shadow-xs'
-                      : 'text-slate-300 hover:text-white hover:bg-[#0E2838]'
+                      ? 'text-white bg-purple-600/40 border border-purple-400/40 shadow-xs'
+                      : 'text-slate-300 hover:text-white hover:bg-white/10'
                   }`}
                   aria-current={isActive ? 'page' : undefined}
                 >
@@ -109,18 +112,18 @@ export const Navbar: React.FC = () => {
           {/* Right CTA & Actions */}
           <div className="hidden sm:flex items-center gap-3">
             <Link
-              to="/dashboard"
+              to="/login"
               className="text-sm font-medium text-slate-300 hover:text-white px-3 py-2 transition-colors"
             >
               Log in
             </Link>
 
             <Link
-              to="/planner"
-              className="px-5 py-2.5 text-sm font-semibold text-white bg-[#1A5C7A] hover:bg-[#207297] border border-[#2B86B0]/50 rounded-xl shadow-md hover:shadow-sky-900/40 transition-all flex items-center gap-2 group active:scale-[0.98]"
+              to="/dashboard"
+              className="px-5 py-2.5 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-md shadow-purple-600/30 transition-all flex items-center gap-2 group active:scale-[0.98]"
             >
-              <span>Get Started</span>
-              <ArrowRight className="w-4 h-4 text-sky-300 group-hover:translate-x-0.5 transition-transform" />
+              <span>Launch App</span>
+              <ArrowRight className="w-4 h-4 text-purple-200 group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>
 
@@ -128,7 +131,7 @@ export const Navbar: React.FC = () => {
           <div className="flex sm:hidden items-center gap-2">
             <button
               type="button"
-              className="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-[#0E2838] focus-visible:outline-2 focus-visible:outline-sky-400"
+              className="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-purple-400"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-expanded={mobileMenuOpen}
               aria-label="Toggle menu"
@@ -141,8 +144,8 @@ export const Navbar: React.FC = () => {
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-[#132F3E] bg-[#071923] px-4 pt-3 pb-6 space-y-2 shadow-2xl">
-          <div className="grid grid-cols-2 gap-1.5 pb-3 border-b border-[#132F3E]">
+        <div className="lg:hidden border-t border-white/10 bg-[#19112E] px-4 pt-3 pb-6 space-y-2 shadow-2xl">
+          <div className="grid grid-cols-2 gap-1.5 pb-3 border-b border-white/10">
             {navLinks.map((item) => (
               <Link
                 key={item.path}
@@ -150,8 +153,8 @@ export const Navbar: React.FC = () => {
                 onClick={() => setMobileMenuOpen(false)}
                 className={`px-3 py-2 text-sm font-medium rounded-lg ${
                   location.pathname === item.path
-                    ? 'bg-[#113144] text-sky-400 font-semibold'
-                    : 'text-slate-300 hover:bg-[#0E2838]'
+                    ? 'bg-purple-600/40 text-purple-200 font-semibold'
+                    : 'text-slate-300 hover:bg-white/10'
                 }`}
               >
                 {item.label}
@@ -161,18 +164,18 @@ export const Navbar: React.FC = () => {
 
           <div className="pt-2 flex flex-col gap-2">
             <Link
-              to="/planner"
+              to="/dashboard"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full py-3 text-center text-sm font-semibold text-white bg-[#1A5C7A] hover:bg-[#207297] rounded-xl flex items-center justify-center gap-2"
+              className="w-full py-3 text-center text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-xl flex items-center justify-center gap-2 shadow-md shadow-purple-600/30"
             >
-              Get Started <ArrowRight className="w-4 h-4" />
+              Launch App <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
-              to="/settings"
+              to="/login"
               onClick={() => setMobileMenuOpen(false)}
               className="w-full py-2.5 text-center text-xs font-medium text-slate-400 hover:text-slate-200"
             >
-              Preferences & Diagnostic Settings
+              Student Sign In / Sign Up
             </Link>
           </div>
         </div>
@@ -180,4 +183,5 @@ export const Navbar: React.FC = () => {
     </header>
   );
 };
+
 

@@ -125,15 +125,15 @@ export const QuizPage: React.FC = () => {
       <Banner isDemoData={currentQuiz?.isDemoFallback} />
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E2DDD2] pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-purple-100/80 pb-6">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-[#6B747A] font-mono">
-            ACTIVE RECALL PRACTICE
+          <span className="text-xs font-bold uppercase tracking-wider text-purple-600 font-mono">
+            ACTIVE RECALL PRACTICE &bull; DIAGNOSTIC TEST
           </span>
-          <h1 className="text-2xl sm:text-4xl font-extrabold text-[#0B1720] tracking-tight">
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-[#1E1B4B] tracking-tight">
             Practice Quizzes
           </h1>
-          <p className="text-xs sm:text-sm text-[#6B747A] mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Rigorous multiple-choice questions with answer shielding, diagnostics, and deep explanations
           </p>
         </div>
@@ -142,24 +142,24 @@ export const QuizPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowHistory(!showHistory)}
-            className="px-4 py-2.5 text-xs sm:text-sm font-semibold text-[#0B1720] bg-white border border-[#E2DDD2] hover:bg-slate-50 rounded-xl flex items-center gap-2 shadow-xs transition-colors"
+            className="px-4 py-2.5 text-xs sm:text-sm font-semibold text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-2xl flex items-center gap-2 shadow-2xs transition-colors cursor-pointer"
           >
-            <History className="w-4 h-4 text-[#1A5C7A]" />
+            <History className="w-4 h-4 text-purple-600" />
             {showHistory ? 'Configure New Quiz' : `Quiz History (${quizHistory.length})`}
           </button>
         )}
       </div>
 
       {error && (
-        <div role="alert" className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-xs sm:text-sm text-rose-700 flex items-center justify-between gap-3">
+        <div role="alert" className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs sm:text-sm text-rose-700 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             <span>{error}</span>
           </div>
           <button
             type="button"
             onClick={() => handleGenerateQuiz()}
-            className="text-xs font-semibold text-rose-800 underline hover:text-rose-950"
+            className="text-xs font-semibold text-rose-800 underline hover:text-rose-950 cursor-pointer"
           >
             Retry
           </button>
@@ -183,26 +183,32 @@ export const QuizPage: React.FC = () => {
         />
       ) : showHistory ? (
         /* Quiz History Table */
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-          <h2 className="text-lg font-bold text-slate-900">Recent Quiz Performance</h2>
+        <div className="bg-white rounded-3xl border border-purple-100 p-6 sm:p-8 shadow-xs space-y-4">
+          <h2 className="text-lg font-bold text-[#1E1B4B]">Recent Quiz Performance</h2>
           <div className="space-y-3">
             {quizHistory.map((q) => (
               <div
                 key={q.id}
-                className="p-4 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-3 hover:border-indigo-200 transition-colors"
+                className="p-4 rounded-2xl border border-purple-100 flex flex-wrap items-center justify-between gap-3 hover:border-purple-300 transition-colors"
               >
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-slate-900">{q.topic}</span>
-                    <Badge variant={q.percentage >= 70 ? 'success' : 'danger'} size="sm">
+                    <span className="text-sm font-bold text-[#1E1B4B]">{q.topic}</span>
+                    <span
+                      className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${
+                        q.percentage >= 70
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : 'bg-rose-50 text-rose-700 border border-rose-200'
+                      }`}
+                    >
                       {q.percentage}%
-                    </Badge>
+                    </span>
                   </div>
                   <div className="text-xs text-slate-500 mt-1">
                     {q.subject} &bull; {q.difficulty} &bull; {new Date(q.completedAt).toLocaleDateString()}
                   </div>
                 </div>
-                <div className="text-xs font-semibold text-slate-600">
+                <div className="text-xs font-bold text-slate-700">
                   {q.score} / {q.totalQuestions} Correct
                 </div>
               </div>
@@ -213,10 +219,10 @@ export const QuizPage: React.FC = () => {
         /* Quiz Generation Form */
         <form
           onSubmit={handleGenerateQuiz}
-          className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-xs space-y-5"
+          className="bg-white rounded-3xl border border-purple-100 p-6 sm:p-8 shadow-xs space-y-5"
         >
-          <div className="border-b border-slate-100 pb-3">
-            <h2 className="text-base sm:text-lg font-bold text-slate-900">
+          <div className="border-b border-purple-100 pb-3">
+            <h2 className="text-base sm:text-lg font-bold text-[#1E1B4B]">
               Customize Practice Assessment
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -235,8 +241,8 @@ export const QuizPage: React.FC = () => {
                 type="text"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                placeholder="e.g. Computer Science, Economics"
-                className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:outline-indigo-600"
+                placeholder="e.g. Computer Science, Operating Systems"
+                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600 focus:border-purple-600"
               />
             </div>
 
@@ -252,7 +258,7 @@ export const QuizPage: React.FC = () => {
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
                 placeholder="e.g. Binary Search Trees, Dynamic Programming"
-                className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:outline-indigo-600"
+                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600 focus:border-purple-600"
               />
             </div>
 
@@ -265,7 +271,7 @@ export const QuizPage: React.FC = () => {
                 id="quiz-diff"
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value as StudyLevel)}
-                className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:outline-indigo-600"
+                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600"
               >
                 <option value="Beginner">Beginner (Foundational definitions & rules)</option>
                 <option value="Intermediate">Intermediate (Application & problem analysis)</option>
@@ -282,7 +288,7 @@ export const QuizPage: React.FC = () => {
                 id="quiz-count"
                 value={questionCount}
                 onChange={(e) => setQuestionCount(Number(e.target.value))}
-                className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:outline-indigo-600"
+                className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600"
               >
                 <option value={3}>3 Questions (Quick check)</option>
                 <option value={4}>4 Questions (Standard practice)</option>
@@ -292,7 +298,7 @@ export const QuizPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+          <div className="pt-3 border-t border-purple-100 flex items-center justify-between">
             <span className="text-xs text-slate-500 hidden sm:inline">
               Answer key is strictly shielded during active quiz
             </span>
@@ -300,7 +306,7 @@ export const QuizPage: React.FC = () => {
               id="generate-quiz-submit-btn"
               type="submit"
               disabled={isLoading}
-              className="w-full sm:w-auto px-6 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-indigo-600"
+              className="w-full sm:w-auto px-6 py-2.5 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 active:scale-[0.98] rounded-xl shadow-md shadow-purple-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
             >
               {isLoading ? (
                 <>

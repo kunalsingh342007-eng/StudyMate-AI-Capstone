@@ -47,16 +47,16 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
   return (
     <article
-      className={`rounded-xl border transition-all duration-200 ${
+      className={`rounded-3xl border transition-all duration-200 ${
         isCompleted
-          ? 'bg-slate-50/80 border-slate-200 opacity-90'
+          ? 'bg-slate-50/80 border-purple-100/60 opacity-90'
           : isMissed
           ? 'bg-rose-50/30 border-rose-200'
-          : 'bg-white border-slate-200 hover:border-indigo-300 shadow-xs'
+          : 'bg-white border-purple-100/80 hover:border-purple-300 shadow-xs hover:shadow-md'
       }`}
       aria-labelledby={`task-title-${task.id}`}
     >
-      <div className="p-4 sm:p-5">
+      <div className="p-5 sm:p-6">
         {/* Header meta */}
         <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
           <div className="flex items-center gap-2">
@@ -69,13 +69,13 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             <Badge variant={priorityVariants[task.priority]} size="sm">
               {task.priority} Priority
             </Badge>
-            <Badge variant="primary" size="sm">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
               <Clock className="w-3 h-3 inline mr-1" />
               {task.durationMinutes} min
-            </Badge>
-            <Badge variant="default" size="sm">
+            </span>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-50 text-slate-700 border border-slate-200">
               {task.difficulty}
-            </Badge>
+            </span>
           </div>
         </div>
 
@@ -84,23 +84,23 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           <div className="space-y-1 flex-1">
             <h3
               id={`task-title-${task.id}`}
-              className={`text-base sm:text-lg font-semibold text-slate-900 leading-snug ${
-                isCompleted ? 'line-through text-slate-500' : ''
+              className={`text-base sm:text-lg font-bold text-[#1E1B4B] leading-snug ${
+                isCompleted ? 'line-through text-slate-400' : ''
               }`}
             >
               {task.topic}
             </h3>
-            <p className="text-xs sm:text-sm font-medium text-indigo-700">{task.subtopic}</p>
+            <p className="text-xs sm:text-sm font-semibold text-purple-700">{task.subtopic}</p>
           </div>
 
           {/* Quick Check Action */}
           <button
             type="button"
             onClick={() => onStatusChange(task.id, isCompleted ? 'pending' : 'completed')}
-            className={`flex-shrink-0 p-1.5 rounded-lg border transition-colors focus-visible:outline-2 focus-visible:outline-indigo-600 ${
+            className={`shrink-0 p-1.5 rounded-xl border transition-colors cursor-pointer ${
               isCompleted
                 ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
-                : 'bg-white text-slate-400 border-slate-300 hover:border-emerald-500 hover:text-emerald-600'
+                : 'bg-white text-slate-300 border-slate-300 hover:border-purple-600 hover:text-purple-600'
             }`}
             title={isCompleted ? 'Mark as pending' : 'Mark as completed'}
             aria-label={isCompleted ? `Mark ${task.topic} as pending` : `Mark ${task.topic} as completed`}
@@ -110,8 +110,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         </div>
 
         {/* Learning Objective */}
-        <div className="mt-3 p-2.5 rounded-lg bg-slate-50 border border-slate-100 flex items-start gap-2 text-xs sm:text-sm text-slate-700">
-          <Target className="w-4 h-4 text-indigo-600 mt-0.5 flex-shrink-0" aria-hidden="true" />
+        <div className="mt-3.5 p-3 rounded-2xl bg-[#F8F7FC] border border-purple-100 flex items-start gap-2.5 text-xs sm:text-sm text-slate-700">
+          <Target className="w-4 h-4 text-purple-600 mt-0.5 shrink-0" aria-hidden="true" />
           <div>
             <span className="font-semibold text-slate-900">Objective: </span>
             {task.learningObjective}
@@ -120,9 +120,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
         {/* Missed session banner if marked */}
         {isMissed && (
-          <div className="mt-2.5 p-2.5 rounded-lg bg-rose-100/70 border border-rose-200 text-xs text-rose-900 flex items-center justify-between gap-2">
+          <div className="mt-2.5 p-2.5 rounded-2xl bg-rose-100/70 border border-rose-200 text-xs text-rose-900 flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5">
-              <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
               <span>
                 <strong>Session missed</strong>: {task.missedReason || 'Schedule conflict'}
               </span>
@@ -130,7 +130,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             <button
               type="button"
               onClick={() => onMissedClick(task)}
-              className="text-xs font-semibold text-rose-700 underline hover:text-rose-900"
+              className="text-xs font-semibold text-rose-700 underline hover:text-rose-900 cursor-pointer"
             >
               Re-adjust Plan
             </button>
@@ -139,7 +139,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
         {/* Collapsible Details: Revision & Practice Recommendation */}
         {expanded && (
-          <div className="mt-4 pt-3 border-t border-slate-100 space-y-3 text-xs sm:text-sm">
+          <div className="mt-4 pt-3 border-t border-purple-100 space-y-3 text-xs sm:text-sm">
             <div className="space-y-1">
               <span className="font-semibold text-slate-800 flex items-center gap-1.5">
                 <RefreshCw className="w-3.5 h-3.5 text-amber-600" />
@@ -150,7 +150,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
             <div className="space-y-1">
               <span className="font-semibold text-slate-800 flex items-center gap-1.5">
-                <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
+                <BookOpen className="w-3.5 h-3.5 text-purple-600" />
                 Practice Recommendation:
               </span>
               <p className="text-slate-600 pl-5">{task.practiceRecommendation}</p>
@@ -167,7 +167,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   <button
                     type="button"
                     onClick={() => setEditingNotes(true)}
-                    className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                    className="text-xs text-purple-600 hover:text-purple-800 font-semibold cursor-pointer"
                   >
                     {task.notes ? 'Edit notes' : '+ Add notes'}
                   </button>
@@ -180,29 +180,29 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                     value={noteText}
                     onChange={(e) => setNoteText(e.target.value)}
                     placeholder="Write quick formulas, key questions, or reminders..."
-                    className="w-full text-xs p-2 rounded border border-slate-300 focus:outline-indigo-600 focus:border-indigo-600"
+                    className="w-full text-xs p-2.5 rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600"
                     rows={3}
                   />
                   <div className="flex gap-2 justify-end">
                     <button
                       type="button"
                       onClick={() => setEditingNotes(false)}
-                      className="px-2 py-1 text-xs text-slate-600 hover:bg-slate-100 rounded"
+                      className="px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       type="button"
                       onClick={handleSaveNotes}
-                      className="px-2.5 py-1 text-xs bg-indigo-600 text-white rounded font-medium hover:bg-indigo-700"
+                      className="px-3 py-1 text-xs bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 cursor-pointer shadow-xs"
                     >
                       Save Notes
                     </button>
                   </div>
                 </div>
               ) : task.notes ? (
-                <p className="text-xs text-slate-600 bg-amber-50/60 p-2 rounded border border-amber-100 italic">
-                  "{task.notes}"
+                <p className="text-xs text-slate-600 bg-amber-50/70 p-2.5 rounded-xl border border-amber-200/60 italic">
+                  &quot;{task.notes}&quot;
                 </p>
               ) : null}
             </div>
@@ -210,11 +210,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         )}
 
         {/* Footer Actions */}
-        <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+        <div className="mt-3.5 pt-3 border-t border-purple-100 flex items-center justify-between text-xs">
           <button
             type="button"
             onClick={() => setExpanded(!expanded)}
-            className="text-slate-500 hover:text-slate-800 font-medium flex items-center gap-1 focus-visible:outline-2 focus-visible:outline-indigo-600 rounded px-1"
+            className="text-slate-500 hover:text-purple-700 font-medium flex items-center gap-1 rounded px-1 cursor-pointer"
             aria-expanded={expanded}
           >
             {expanded ? (
@@ -232,7 +232,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             <button
               type="button"
               onClick={() => onMissedClick(task)}
-              className="text-slate-400 hover:text-rose-600 transition-colors font-medium flex items-center gap-1 focus-visible:outline-2 focus-visible:outline-indigo-600 rounded px-1"
+              className="text-slate-400 hover:text-rose-600 transition-colors font-medium flex items-center gap-1 rounded px-1 cursor-pointer"
             >
               <AlertCircle className="w-3.5 h-3.5" /> Missed session?
             </button>

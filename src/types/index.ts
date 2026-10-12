@@ -402,6 +402,37 @@ export interface UserPreferences {
   reducedMotion: boolean;
   fontSize: 'normal' | 'large';
   soundEnabled: boolean;
+  preferredStudyDays?: string[];
+  defaultDifficulty?: StudyLevel;
+  studyReminders?: boolean;
+}
+
+export interface StudyNote {
+  id: string;
+  title: string;
+  subject: string;
+  topic?: string;
+  content: string;
+  tags: string[];
+  isPinned: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+  academicLevel: string;
+  institution?: string;
+  targetExam: string;
+  targetExamDate: string;
+  bio?: string;
+  dailyGoalHours: number;
+  streakDays: number;
+  totalStudyMinutes: number;
+  quizzesCompleted: number;
 }
 
 export interface StudyProgress {

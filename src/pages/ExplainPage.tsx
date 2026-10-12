@@ -63,14 +63,14 @@ export const ExplainPage: React.FC = () => {
 
       {/* Header */}
       <div className="text-center space-y-3">
-        <span className="text-xs font-bold uppercase tracking-wider text-[#6B747A] font-mono">
-          UNDERSTAND ANY TOPIC
+        <span className="text-xs font-bold uppercase tracking-wider text-purple-600 font-mono">
+          PEDAGOGICAL CONCEPT ENGINE
         </span>
-        <h1 className="text-3xl sm:text-5xl font-extrabold text-[#0B1720] tracking-tight">
-          Topic Explainer
+        <h1 className="text-3xl sm:text-5xl font-extrabold text-[#1E1B4B] tracking-tight">
+          AI Topic Explainer
         </h1>
-        <p className="text-xs sm:text-base text-[#6B747A] max-w-xl mx-auto leading-relaxed">
-          Break down any difficult concept with intuitive analogies, step-by-step logic, code examples, common traps, and instant recall questions.
+        <p className="text-xs sm:text-base text-slate-500 max-w-xl mx-auto leading-relaxed">
+          Break down complex algorithms, system architectures, and mathematical proofs into 7 intuitive pedagogical layers with code, traps, and practice recall.
         </p>
       </div>
 
@@ -80,11 +80,11 @@ export const ExplainPage: React.FC = () => {
           e.preventDefault();
           handleExplain();
         }}
-        className="bg-white rounded-2xl border border-[#E2DDD2] p-6 shadow-xs space-y-4"
+        className="bg-white rounded-3xl border border-purple-100 p-6 sm:p-7 shadow-xs space-y-4"
       >
         <div className="space-y-1.5">
-          <label htmlFor="explain-topic-input" className="block text-xs font-bold text-[#0B1720] uppercase font-mono">
-            What topic would you like explained? <span className="text-rose-500">*</span>
+          <label htmlFor="explain-topic-input" className="block text-xs font-bold text-slate-800 uppercase font-mono">
+            What concept would you like explained? <span className="text-rose-500">*</span>
           </label>
           <div className="flex flex-col sm:flex-row gap-2.5">
             <input
@@ -94,13 +94,13 @@ export const ExplainPage: React.FC = () => {
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               placeholder="e.g. Explain recursion in C++, B-Trees, Dynamic Programming..."
-              className="flex-1 text-sm px-4 py-3 rounded-xl border border-[#D5CFBE] bg-white text-[#0B1720] focus:outline-[#1A5C7A] focus:border-[#1A5C7A]"
+              className="flex-1 text-sm px-4 py-3 rounded-2xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600 focus:border-purple-600"
             />
             <button
               id="explain-submit-btn"
               type="submit"
               disabled={isLoading}
-              className="px-6 py-3 text-sm font-semibold text-white bg-[#1A5C7A] hover:bg-[#207297] rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              className="px-6 py-3 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 active:scale-[0.98] rounded-2xl shadow-md shadow-purple-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
             >
               {isLoading ? (
                 <>
@@ -109,7 +109,7 @@ export const ExplainPage: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4 text-sky-300" />
+                  <Sparkles className="w-4 h-4 text-purple-200" />
                   Explain Concept
                 </>
               )}
@@ -118,7 +118,7 @@ export const ExplainPage: React.FC = () => {
         </div>
 
         {/* Level Switcher */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-slate-100">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-purple-100">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-slate-600">Depth Level:</span>
             {(['Beginner', 'Intermediate', 'Advanced'] as const).map((lvl) => (
@@ -127,10 +127,10 @@ export const ExplainPage: React.FC = () => {
                 key={lvl}
                 type="button"
                 onClick={() => setLevel(lvl)}
-                className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-indigo-600 ${
+                className={`px-3 py-1 text-xs font-semibold rounded-xl transition-colors cursor-pointer ${
                   level === lvl
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    ? 'bg-purple-600 text-white shadow-xs'
+                    : 'bg-purple-50 text-slate-700 hover:bg-purple-100'
                 }`}
               >
                 {lvl}
@@ -138,7 +138,7 @@ export const ExplainPage: React.FC = () => {
             ))}
           </div>
 
-          <div className="text-[11px] text-slate-500">
+          <div className="text-[11px] text-purple-700 font-medium">
             Structured into 7 pedagogical concept layers
           </div>
         </div>
@@ -146,7 +146,7 @@ export const ExplainPage: React.FC = () => {
         {/* Preset Topic Chips */}
         <div className="pt-2">
           <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">
-            Quick Explorations:
+            Suggested Core Topics:
           </span>
           <div className="flex flex-wrap gap-1.5">
             {presetTopics.map((pt, idx) => (
@@ -157,7 +157,7 @@ export const ExplainPage: React.FC = () => {
                   setTopic(pt);
                   handleExplain(pt);
                 }}
-                className="px-2.5 py-1 rounded-lg text-xs bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 text-slate-600 border border-slate-200 transition-colors"
+                className="px-3 py-1 rounded-xl text-xs bg-[#F8F7FC] hover:bg-purple-100 hover:text-purple-800 text-slate-700 border border-purple-100 transition-colors cursor-pointer"
               >
                 {pt}
               </button>
