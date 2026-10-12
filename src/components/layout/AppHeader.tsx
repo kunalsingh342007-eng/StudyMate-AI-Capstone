@@ -16,6 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import { useStorage } from '../../hooks/useStorage';
+import { useAuth } from '../../context/AuthContext';
 
 interface AppHeaderProps {
   onOpenMobileMenu: () => void;
@@ -28,7 +29,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onOpenSearch,
   onOpenAuthModal,
 }) => {
-  const { progress, userProfile, activePlan, spacedReviews } = useStorage();
+  const { progress, activePlan, spacedReviews } = useStorage();
+  const { userProfile, currentUser, logout, isDemoMode } = useAuth();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
@@ -233,14 +235,18 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={async () => {
                     setProfileDropdownOpen(false);
-                    onOpenAuthModal();
+                    if (currentUser || isDemoMode) {
+                      await logout();
+                    } else {
+                      onOpenAuthModal();
+                    }
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors text-left"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors text-left cursor-pointer"
                 >
                   <LogOut className="w-4 h-4 text-rose-600" />
-                  <span>Switch Account / Sign In</span>
+                  <span>{currentUser || isDemoMode ? 'Sign Out' : 'Sign In'}</span>
                 </button>
               </div>
             </>

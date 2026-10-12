@@ -1,0 +1,106 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile document containing student identity details.",
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "description": "The student's full display name."
+        },
+        "email": {
+          "type": "string",
+          "description": "The student's primary email address."
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "URL to student avatar image."
+        },
+        "academicLevel": {
+          "type": "string",
+          "description": "Academic level e.g. Undergraduate Senior, High School."
+        },
+        "institution": {
+          "type": "string",
+          "description": "College, university, or school institution."
+        },
+        "targetExam": {
+          "type": "string",
+          "description": "Target exam name or semester finals."
+        },
+        "bio": {
+          "type": "string",
+          "description": "Short student bio."
+        },
+        "dailyGoalHours": {
+          "type": "number",
+          "description": "Target study goal in hours per day."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of account creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last profile update."
+        }
+      },
+      "required": ["email"]
+    },
+    "UserPreferences": {
+      "title": "UserPreferences",
+      "description": "User preferences and study configuration stored in subcollection settings/preferences.",
+      "type": "object",
+      "properties": {
+        "theme": {
+          "type": "string",
+          "enum": ["light", "dark", "system"],
+          "description": "Visual theme selection."
+        },
+        "dailyStudyGoalMinutes": {
+          "type": "number",
+          "description": "Daily study target in minutes."
+        },
+        "preferredStudyDays": {
+          "type": "string",
+          "description": "Comma-separated or formatted list of preferred study days."
+        },
+        "defaultStudyDurationMinutes": {
+          "type": "number",
+          "description": "Default study session duration in minutes."
+        },
+        "interfaceLanguage": {
+          "type": "string",
+          "description": "Interface language (e.g. en, es, fr, de)."
+        },
+        "studyRemindersEnabled": {
+          "type": "boolean",
+          "description": "Whether daily study notification reminders are enabled."
+        },
+        "examRemindersEnabled": {
+          "type": "boolean",
+          "description": "Whether upcoming exam countdown reminders are enabled."
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last preferences update."
+        }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "User profile document owned exclusively by the authenticated user."
+    },
+    "/users/{userId}/settings/preferences": {
+      "schema": {
+        "$ref": "#/entities/UserPreferences"
+      },
+      "description": "Preferences document for user appearance, study goals, and reminders."
+    }
+  }
+}

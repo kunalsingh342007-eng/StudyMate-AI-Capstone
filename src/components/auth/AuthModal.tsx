@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { X, Sparkles, Mail, Lock, User, ArrowRight, CheckCircle2, Shield } from 'lucide-react';
-import { useStorage } from '../../hooks/useStorage';
+import { X, Sparkles, Mail, Lock, User, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -9,50 +9,58 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMode = 'signin' }) => {
-  const { userProfile, saveUserProfile } = useStorage();
+  const { login, register, enterDemoMode } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>(defaultMode);
-  const [email, setEmail] = useState(userProfile.email || 'alex.rivera@university.edu');
-  const [password, setPassword] = useState('••••••••••••');
-  const [name, setName] = useState(userProfile.name || 'Alex Rivera');
-  const [academicLevel, setAcademicLevel] = useState(userProfile.academicLevel || 'Undergraduate Senior');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [academicLevel, setAcademicLevel] = useState('Undergraduate Senior');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
-      saveUserProfile({
-        name: name.trim() || 'Alex Rivera',
-        email: email.trim() || 'alex.rivera@university.edu',
-        academicLevel,
-      });
-      setIsLoading(false);
-      setSuccessNotice(mode === 'signin' ? 'Welcome back! Logged in successfully.' : 'Account created successfully!');
+    setErrorMessage(null);
+
+    try {
+      if (mode === 'signin') {
+        await login(email, password);
+        setSuccessNotice('Welcome back! Signed in successfully.');
+      } else {
+        await register({
+          email,
+          password,
+          displayName: name,
+          academicLevel,
+        });
+        setSuccessNotice('Account created successfully!');
+      }
+
       setTimeout(() => {
         setSuccessNotice(null);
         onClose();
-      }, 1000);
-    }, 500);
+      }, 700);
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Authentication failed. Please check your credentials.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDemoLogin = () => {
     setIsLoading(true);
+    setErrorMessage(null);
+    enterDemoMode();
+    setSuccessNotice('Signed in with Demo Student profile!');
     setTimeout(() => {
-      saveUserProfile({
-        name: 'Alex Rivera',
-        email: 'alex.rivera@university.edu',
-        academicLevel: 'Undergraduate Senior',
-      });
+      setSuccessNotice(null);
       setIsLoading(false);
-      setSuccessNotice('Signed in with Demo Student profile!');
-      setTimeout(() => {
-        setSuccessNotice(null);
-        onClose();
-      }, 900);
-    }, 400);
+      onClose();
+    }, 600);
   };
 
   return (
@@ -71,7 +79,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMo
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-5 right-5 p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition-colors"
+            className="absolute top-5 right-5 p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition-colors cursor-pointer"
             aria-label="Close dialog"
           >
             <X className="w-5 h-5" />
@@ -96,8 +104,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMo
         <div className="px-6 pt-5 pb-2 flex border-b border-purple-100/80">
           <button
             type="button"
-            onClick={() => setMode('signin')}
-            className={`flex-1 pb-3 text-sm font-semibold border-b-2 transition-all ${
+            onClick={() => {
+              setMode('signin');
+              setErrorMessage(null);
+            }}
+            className={`flex-1 pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
               mode === 'signin'
                 ? 'border-purple-600 text-purple-700'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -107,8 +118,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMo
           </button>
           <button
             type="button"
-            onClick={() => setMode('signup')}
-            className={`flex-1 pb-3 text-sm font-semibold border-b-2 transition-all ${
+            onClick={() => {
+              setMode('signup');
+              setErrorMessage(null);
+            }}
+            className={`flex-1 pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
               mode === 'signup'
                 ? 'border-purple-600 text-purple-700'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -118,124 +132,125 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMo
           </button>
         </div>
 
-        {/* Body content */}
         <div className="p-6 space-y-4">
-          {successNotice ? (
-            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-              <p className="text-sm font-semibold">{successNotice}</p>
+          {/* Demo student quick entry */}
+          <div className="p-3 bg-purple-50/70 border border-purple-100 rounded-2xl flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-purple-900 font-medium">
+              <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />
+              <span>Preview without account?</span>
             </div>
-          ) : (
-            <>
-              {/* Demo quick signin */}
-              <button
-                type="button"
-                onClick={handleDemoLogin}
-                disabled={isLoading}
-                className="w-full py-2.5 px-4 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-800 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
-              >
-                <Sparkles className="w-4 h-4 text-purple-600" />
-                <span>Continue as Demo Student (Alex Rivera)</span>
-              </button>
+            <button
+              type="button"
+              onClick={handleDemoLogin}
+              disabled={isLoading}
+              className="px-2.5 py-1.5 bg-white hover:bg-purple-100/70 text-purple-700 border border-purple-200 rounded-lg font-bold text-[11px] shadow-2xs transition-colors shrink-0 cursor-pointer"
+            >
+              Try Demo Student
+            </button>
+          </div>
 
-              <div className="relative flex items-center justify-center my-3">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-200" />
-                </div>
-                <span className="relative bg-white px-3 text-[11px] font-medium text-slate-600 uppercase">
-                  or with email
-                </span>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-3.5">
-                {mode === 'signup' && (
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Full Name</label>
-                    <div className="relative">
-                      <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                      <input
-                        type="text"
-                        required
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g. Alex Rivera"
-                        className="w-full pl-10 pr-3.5 py-2.5 text-sm rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600 focus:border-purple-600"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Email Address</label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="student@university.edu"
-                      className="w-full pl-10 pr-3.5 py-2.5 text-sm rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600 focus:border-purple-600"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Password</label>
-                  <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                    <input
-                      type="password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full pl-10 pr-3.5 py-2.5 text-sm rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600 focus:border-purple-600"
-                    />
-                  </div>
-                </div>
-
-                {mode === 'signup' && (
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Academic Level</label>
-                    <select
-                      value={academicLevel}
-                      onChange={(e) => setAcademicLevel(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600"
-                    >
-                      <option value="High School">High School</option>
-                      <option value="Undergraduate Junior">Undergraduate Junior</option>
-                      <option value="Undergraduate Senior">Undergraduate Senior</option>
-                      <option value="Graduate Student">Graduate Student</option>
-                      <option value="Self-Taught / Professional">Self-Taught / Professional</option>
-                    </select>
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 active:scale-[0.99] text-white font-semibold text-sm shadow-md shadow-purple-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer mt-2"
-                >
-                  {isLoading ? (
-                    <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <span>{mode === 'signin' ? 'Sign In' : 'Create Account'}</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </form>
-
-              <div className="pt-2 text-center">
-                <p className="text-[11px] text-slate-600 flex items-center justify-center gap-1">
-                  <Shield className="w-3.5 h-3.5 text-purple-600 inline" />
-                  <span>Your study data and schedule stay secure & private</span>
-                </p>
-              </div>
-            </>
+          {errorMessage && (
+            <div
+              role="alert"
+              className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-semibold flex items-center gap-2"
+            >
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
           )}
+
+          {successNotice && (
+            <div
+              role="status"
+              className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold flex items-center gap-2"
+            >
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>{successNotice}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-3.5">
+            {mode === 'signup' && (
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Your Name</label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Alex Rivera"
+                    className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm border border-slate-200 rounded-xl focus:outline-purple-600 focus:border-purple-600 bg-white"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Email Address</label>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="student@university.edu"
+                  className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm border border-slate-200 rounded-xl focus:outline-purple-600 focus:border-purple-600 bg-white"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Password</label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="At least 6 characters"
+                  className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm border border-slate-200 rounded-xl focus:outline-purple-600 focus:border-purple-600 bg-white"
+                />
+              </div>
+            </div>
+
+            {mode === 'signup' && (
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Academic Standing</label>
+                <select
+                  value={academicLevel}
+                  onChange={(e) => setAcademicLevel(e.target.value)}
+                  className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-200 rounded-xl focus:outline-purple-600 focus:border-purple-600 bg-white text-slate-800"
+                >
+                  <option value="Undergraduate Freshman">Undergraduate Freshman</option>
+                  <option value="Undergraduate Sophomore">Undergraduate Sophomore</option>
+                  <option value="Undergraduate Junior">Undergraduate Junior</option>
+                  <option value="Undergraduate Senior">Undergraduate Senior</option>
+                  <option value="Graduate / Master's">Graduate / Master&apos;s</option>
+                  <option value="Competitive Exam Candidate">Competitive Exam Candidate</option>
+                </select>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-2.5 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-purple-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+            >
+              {isLoading ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  <span>{mode === 'signin' ? 'Sign In' : 'Create Account'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </form>
         </div>
       </div>
     </div>
