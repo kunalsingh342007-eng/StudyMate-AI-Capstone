@@ -1,6 +1,8 @@
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
   signOut,
   sendPasswordResetEmail,
   updateProfile,
@@ -53,6 +55,30 @@ export class AuthService {
       const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
       return credential.user;
     } catch (error: any) {
+      throw new Error(this.getFriendlyErrorMessage(error));
+    }
+  }
+
+  /**
+   * Sign in using Google Sign-In Popup.
+   */
+  static async loginWithGoogle(): Promise<User> {
+    if (!auth || !isFirebaseConfigured) {
+      throw new Error('Firebase Authentication is not configured. Please check your environment configuration.');
+    }
+
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const credential = await signInWithPopup(auth, provider);
+      return credential.user;
+    } catch (error: any) {
+      if (
+        error?.code === 'auth/popup-closed-by-user' ||
+        error?.code === 'auth/cancelled-popup-request'
+      ) {
+        throw new Error('Google sign-in popup was closed before completing.');
+      }
       throw new Error(this.getFriendlyErrorMessage(error));
     }
   }

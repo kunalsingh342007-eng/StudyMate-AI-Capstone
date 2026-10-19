@@ -30,8 +30,11 @@ if (firebaseConfig.apiKey && firebaseConfig.projectId) {
   try {
     app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     auth = getAuth(app);
-    // Connect to specific database if provided, or default
-    db = databaseId && databaseId !== '(default)' ? getFirestore(app, databaseId) : getFirestore(app);
+    // Connect to specific database if custom non-default provided, or default
+    db =
+      databaseId && databaseId !== '(default)' && databaseId !== firebaseConfig.projectId
+        ? getFirestore(app, databaseId)
+        : getFirestore(app);
     isConfigured = true;
   } catch (error) {
     console.warn('[StudyMate Firebase] Initialization encountered an issue:', error);

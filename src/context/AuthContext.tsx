@@ -19,6 +19,7 @@ interface AuthContextValue {
   isFirebaseConfigured: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   register: (data: RegisterUserData) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -140,6 +141,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const loginWithGoogle = async () => {
+    setLoading(true);
+    try {
+      const user = await AuthService.loginWithGoogle();
+      setIsDemoMode(false);
+      localStorage.removeItem(DEMO_STORAGE_KEY);
+      await loadUserData(user);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const register = async (data: RegisterUserData) => {
     setLoading(true);
     try {
@@ -234,6 +247,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isFirebaseConfigured,
     isAuthenticated,
     login,
+    loginWithGoogle,
     register,
     logout,
     resetPassword,
