@@ -27,7 +27,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, onOpenAuthModal }) => {
   const { progress, activePlan } = useStorage();
-  const { userProfile, preferences, currentUser, logout, isDemoMode } = useAuth();
+  const { userProfile, preferences, currentUser, logout } = useAuth();
 
   const dailyGoalHours = preferences.dailyStudyGoalMinutes
     ? Math.round((preferences.dailyStudyGoalMinutes / 60) * 10) / 10
@@ -168,15 +168,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, onOpenAuthModal
           <button
             type="button"
             onClick={async () => {
-              if (currentUser || isDemoMode) {
+              if (currentUser) {
                 await logout();
               } else if (onOpenAuthModal) {
                 onOpenAuthModal();
               }
             }}
-            title={currentUser || isDemoMode ? 'Sign Out' : 'Sign In'}
+            title={currentUser ? 'Sign Out' : 'Sign In'}
             className="p-1.5 rounded-lg text-purple-300/70 hover:text-white hover:bg-white/10 transition-colors shrink-0 ml-1 cursor-pointer"
-            aria-label={currentUser || isDemoMode ? 'Sign Out' : 'Sign In'}
+            aria-label={currentUser ? 'Sign Out' : 'Sign In'}
           >
             <LogOut className="w-3.5 h-3.5" />
           </button>

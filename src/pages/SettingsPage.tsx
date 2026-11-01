@@ -35,7 +35,6 @@ export const SettingsPage: React.FC = () => {
     logout,
     resetPassword,
     deleteAccount,
-    isDemoMode,
   } = useAuth();
 
   // Local form state initialized from Firestore preferences
@@ -636,11 +635,11 @@ export const SettingsPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-purple-600" />
               <span className="font-semibold text-slate-800">
-                {currentUser ? 'Authenticated with Firebase' : 'Demo Mode Student Profile'}
+                {currentUser ? 'Authenticated with Firebase' : 'Guest Account'}
               </span>
             </div>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-200 text-purple-800">
-              {currentUser ? 'Cloud Synced' : 'Sandbox Active'}
+              {currentUser ? 'Cloud Synced' : 'Local Storage'}
             </span>
           </div>
 

@@ -58,7 +58,7 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth" element={<Navigate to="/login" replace />} />
 
-          {/* Workspace Pages (Protected with Firebase / Demo Session) */}
+          {/* Workspace Pages (Protected with Firebase Authentication) */}
           <Route
             path="/dashboard"
             element={

@@ -19,12 +19,10 @@ export const LoginPage: React.FC = () => {
   const location = useLocation();
   const {
     currentUser,
-    isDemoMode,
     login,
     loginWithGoogle,
     register,
     resetPassword,
-    enterDemoMode,
     isFirebaseConfigured,
   } = useAuth();
 
@@ -45,11 +43,11 @@ export const LoginPage: React.FC = () => {
 
   // Redirect authenticated users away from login
   useEffect(() => {
-    if (currentUser || isDemoMode) {
+    if (currentUser) {
       const from = (location.state as any)?.from?.pathname || '/dashboard';
       navigate(from, { replace: true });
     }
-  }, [currentUser, isDemoMode, navigate, location]);
+  }, [currentUser, navigate, location]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,15 +96,6 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleDemoLogin = () => {
-    setErrorMessage(null);
-    setSuccessMessage('Entering StudyMate AI as Alex Rivera (Demo Student)...');
-    setIsLoading(true);
-    setTimeout(() => {
-      enterDemoMode();
-      navigate('/dashboard');
-    }, 500);
-  };
 
   const handleResetPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,26 +182,6 @@ export const LoginPage: React.FC = () => {
           </div>
 
           <div className="p-6 sm:p-8 space-y-6">
-            {/* Quick Demo Access banner */}
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100/80 flex items-center justify-between gap-3">
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-purple-900">
-                  <Sparkles className="w-3.5 h-3.5 text-purple-600 fill-purple-600" />
-                  <span>Explore Demo Mode</span>
-                </div>
-                <p className="text-[11px] text-slate-600">
-                  Try all features immediately as demo student Alex Rivera without signing in
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleDemoLogin}
-                disabled={isLoading}
-                className="px-3.5 py-2 text-xs font-bold text-purple-700 hover:text-purple-900 bg-white hover:bg-purple-100/60 border border-purple-200 rounded-xl transition-colors shadow-2xs shrink-0 cursor-pointer"
-              >
-                Try Demo &rarr;
-              </button>
-            </div>
 
             {/* Error banner */}
             {errorMessage && (

@@ -30,36 +30,19 @@ interface AuthContextValue {
   deleteAccount: () => Promise<void>;
 }
 
-const DEMO_STUDENT_PROFILE: UserProfile = {
-  id: 'demo-student-alex',
-  name: 'Alex Rivera',
-  email: 'alex.rivera@university.edu',
-  academicLevel: 'Undergraduate Senior',
-  institution: 'School of Computer Science & Engineering',
-  targetExam: 'Semester Finals / Tech Exam',
-  targetExamDate: new Date(Date.now() + 18 * 86400000).toISOString().split('T')[0],
-  bio: 'Computer Science senior focused on systems architecture, algorithm mastery, and operating systems.',
-  dailyGoalHours: 3,
-  streakDays: 7,
-  totalStudyMinutes: 1590,
-  quizzesCompleted: 14,
-};
-
 const AuthContext = createContext<AuthContextValue | null>(null);
-
-const DEMO_STORAGE_KEY = 'studymate_demo_mode_active';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [isDemoMode, setIsDemoMode] = useState<boolean>(() => {
-    return localStorage.getItem(DEMO_STORAGE_KEY) === 'true';
-  });
+  const isDemoMode = false;
+
+  // Clean up any lingering demo state from previous sessions
+  useEffect(() => {
+    localStorage.removeItem('studymate_demo_mode_active');
+  }, []);
 
   const [userProfile, setUserProfile] = useState<UserProfile>(() => {
-    if (localStorage.getItem(DEMO_STORAGE_KEY) === 'true') {
-      return DEMO_STUDENT_PROFILE;
-    }
     return StorageService.getUserProfile();
   });
 
@@ -118,17 +101,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
-        setIsDemoMode(false);
-        localStorage.removeItem(DEMO_STORAGE_KEY);
         await loadUserData(user);
       } else {
-        // When not signed into Firebase, check if demo mode was preserved
-        if (localStorage.getItem(DEMO_STORAGE_KEY) === 'true') {
-          setIsDemoMode(true);
-          setUserProfile(DEMO_STUDENT_PROFILE);
-        } else {
-          setUserProfile(StorageService.getUserProfile());
-        }
+        setUserProfile(StorageService.getUserProfile());
       }
       setLoading(false);
     });
@@ -170,8 +145,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       const user = await AuthService.login(email, password);
-      setIsDemoMode(false);
-      localStorage.removeItem(DEMO_STORAGE_KEY);
       await loadUserData(user);
     } finally {
       setLoading(false);
@@ -182,8 +155,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       const user = await AuthService.loginWithGoogle();
-      setIsDemoMode(false);
-      localStorage.removeItem(DEMO_STORAGE_KEY);
       await loadUserData(user);
     } finally {
       setLoading(false);
@@ -194,8 +165,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       const user = await AuthService.register(data);
-      setIsDemoMode(false);
-      localStorage.removeItem(DEMO_STORAGE_KEY);
 
       // Save initial profile in Firestore (non-fatal if Firestore rules are pending)
       const initialProfile: Partial<UserProfile> = {
@@ -218,8 +187,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await AuthService.logout();
       setCurrentUser(null);
-      setIsDemoMode(false);
-      localStorage.removeItem(DEMO_STORAGE_KEY);
       setUserProfile(StorageService.getUserProfile());
       setPreferences(DEFAULT_FIRESTORE_PREFERENCES);
     } finally {
@@ -232,16 +199,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const enterDemoMode = () => {
-    setIsDemoMode(true);
-    localStorage.setItem(DEMO_STORAGE_KEY, 'true');
-    setUserProfile(DEMO_STUDENT_PROFILE);
-    StorageService.saveUserProfile(DEMO_STUDENT_PROFILE);
+    // Demo mode removed - no-op
   };
 
   const exitDemoMode = () => {
-    setIsDemoMode(false);
-    localStorage.removeItem(DEMO_STORAGE_KEY);
-    setUserProfile(StorageService.getUserProfile());
+    // Demo mode removed - no-op
   };
 
   const updateProfile = async (data: Partial<UserProfile>) => {
@@ -266,14 +228,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const deleteAccount = async () => {
     await AuthService.deleteAccount();
     setCurrentUser(null);
-    setIsDemoMode(false);
-    localStorage.removeItem(DEMO_STORAGE_KEY);
     setUserProfile(StorageService.getUserProfile());
   };
 
   const isAuthenticated = useMemo(() => {
-    return !!currentUser || isDemoMode;
-  }, [currentUser, isDemoMode]);
+    return !!currentUser;
+  }, [currentUser]);
 
   const value: AuthContextValue = {
     currentUser,

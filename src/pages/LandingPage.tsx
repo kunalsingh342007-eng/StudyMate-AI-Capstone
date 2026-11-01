@@ -43,7 +43,7 @@ export const LandingPage: React.FC = () => {
   const faqs = [
     {
       q: 'Is StudyMate free to use?',
-      a: 'Yes, StudyMate includes full study planning, topic breakdowns, practice quizzes, and progress tracking with free local storage and demo modes.',
+      a: 'Yes, StudyMate includes full study planning, topic breakdowns, practice quizzes, and progress tracking with cloud sync and local storage.',
     },
     {
       q: 'Can I use StudyMate on mobile devices?',

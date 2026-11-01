@@ -31,7 +31,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onOpenAuthModal,
 }) => {
   const { progress, activePlan, spacedReviews } = useStorage();
-  const { userProfile, preferences, currentUser, logout, isDemoMode } = useAuth();
+  const { userProfile, preferences, currentUser, logout } = useAuth();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
@@ -255,7 +255,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                   type="button"
                   onClick={async () => {
                     setProfileDropdownOpen(false);
-                    if (currentUser || isDemoMode) {
+                    if (currentUser) {
                       await logout();
                     } else {
                       onOpenAuthModal();
@@ -264,7 +264,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                   className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors text-left cursor-pointer"
                 >
                   <LogOut className="w-4 h-4 text-rose-600" />
-                  <span>{currentUser || isDemoMode ? 'Sign Out' : 'Sign In'}</span>
+                  <span>{currentUser ? 'Sign Out' : 'Sign In'}</span>
                 </button>
               </div>
             </>

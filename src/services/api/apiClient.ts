@@ -69,7 +69,7 @@ export const ApiClient = {
         provider: 'Google Gemini',
         model: 'gemini-3.8-flash',
         status: 'error',
-        message: 'Could not reach server status endpoint. Operating in offline demo mode.',
+        message: 'Could not reach server status endpoint. Operating in offline mode.',
       };
     }
   },

@@ -9,7 +9,7 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMode = 'signin' }) => {
-  const { login, loginWithGoogle, register, enterDemoMode } = useAuth();
+  const { login, loginWithGoogle, register } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>(defaultMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -69,17 +69,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMo
     }
   };
 
-  const handleDemoLogin = () => {
-    setIsLoading(true);
-    setErrorMessage(null);
-    enterDemoMode();
-    setSuccessNotice('Signed in with Demo Student profile!');
-    setTimeout(() => {
-      setSuccessNotice(null);
-      setIsLoading(false);
-      onClose();
-    }, 600);
-  };
 
   return (
     <div
@@ -151,21 +140,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMo
         </div>
 
         <div className="p-6 space-y-4">
-          {/* Demo student quick entry */}
-          <div className="p-3 bg-purple-50/70 border border-purple-100 rounded-2xl flex items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2 text-purple-900 font-medium">
-              <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />
-              <span>Preview without account?</span>
-            </div>
-            <button
-              type="button"
-              onClick={handleDemoLogin}
-              disabled={isLoading}
-              className="px-2.5 py-1.5 bg-white hover:bg-purple-100/70 text-purple-700 border border-purple-200 rounded-lg font-bold text-[11px] shadow-2xs transition-colors shrink-0 cursor-pointer"
-            >
-              Try Demo Student
-            </button>
-          </div>
 
           {errorMessage && (
             <div
