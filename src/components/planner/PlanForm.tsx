@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Sparkles, Calendar, Clock, BookOpen, AlertCircle, Plus, X, Layers } from 'lucide-react';
 import { StudyPlanRequest, StudyLevel } from '../../types';
+import { useAuth } from '../../context/AuthContext';
 
 interface PlanFormProps {
   onSubmit: (request: StudyPlanRequest) => Promise<void>;
@@ -8,22 +9,37 @@ interface PlanFormProps {
 }
 
 export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading }) => {
+  const { preferences, userProfile } = useAuth();
   const defaultExamDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  const defaultHours = preferences.dailyStudyGoalMinutes
+    ? Math.round((preferences.dailyStudyGoalMinutes / 60) * 10) / 10
+    : userProfile.dailyGoalHours || 2.5;
+
+  const dayCodeToFull: Record<string, string> = {
+    Mon: 'Monday',
+    Tue: 'Tuesday',
+    Wed: 'Wednesday',
+    Thu: 'Thursday',
+    Fri: 'Friday',
+    Sat: 'Saturday',
+    Sun: 'Sunday',
+  };
+
+  const initialDays = preferences.preferredStudyDays
+    ? preferences.preferredStudyDays
+        .split(',')
+        .map((d) => dayCodeToFull[d.trim()] || d.trim())
+        .filter(Boolean)
+    : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
   const [subject, setSubject] = useState('Operating Systems & Computer Architecture');
   const [topicsInput, setTopicsInput] = useState('Process Synchronization, Virtual Memory, CPU Scheduling, File Systems, Deadlocks, Cache Coherence');
   const [examDate, setExamDate] = useState(defaultExamDate);
-  const [dailyHours, setDailyHours] = useState<number>(2.5);
+  const [dailyHours, setDailyHours] = useState<number>(defaultHours);
   const [level, setLevel] = useState<StudyLevel>('Intermediate');
   const [weakTopicsInput, setWeakTopicsInput] = useState('Virtual Memory, Deadlocks');
-  const [selectedDays, setSelectedDays] = useState<string[]>([
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-  ]);
+  const [selectedDays, setSelectedDays] = useState<string[]>(initialDays);
   const [formError, setFormError] = useState<string | null>(null);
 
   const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];

@@ -27,7 +27,11 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, onOpenAuthModal }) => {
   const { progress, activePlan } = useStorage();
-  const { userProfile, currentUser, logout, isDemoMode } = useAuth();
+  const { userProfile, preferences, currentUser, logout, isDemoMode } = useAuth();
+
+  const dailyGoalHours = preferences.dailyStudyGoalMinutes
+    ? Math.round((preferences.dailyStudyGoalMinutes / 60) * 10) / 10
+    : userProfile.dailyGoalHours || 3;
 
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -119,7 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, onOpenAuthModal
           <div className="flex justify-between text-[11px] text-purple-200/70 font-medium">
             <span>Daily Goal</span>
             <span>
-              {(progress.totalHoursStudied % userProfile.dailyGoalHours).toFixed(1)} / {userProfile.dailyGoalHours}h
+              {(progress.totalHoursStudied % dailyGoalHours).toFixed(1)} / {dailyGoalHours}h
             </span>
           </div>
           <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
@@ -128,7 +132,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, onOpenAuthModal
               style={{
                 width: `${Math.min(
                   100,
-                  Math.round(((progress.totalHoursStudied % userProfile.dailyGoalHours) / userProfile.dailyGoalHours) * 100) || 65
+                  Math.round(((progress.totalHoursStudied % dailyGoalHours) / dailyGoalHours) * 100) || 65
                 )}%`,
               }}
             />

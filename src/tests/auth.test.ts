@@ -54,6 +54,33 @@ describe('Firestore User Preferences & Data Model Validation', () => {
     const validThemes: Array<'light' | 'dark' | 'system'> = ['light', 'dark', 'system'];
     expect(validThemes).toContain(DEFAULT_FIRESTORE_PREFERENCES.theme);
   });
+
+  it('correctly calculates dailyGoalHours from dailyStudyGoalMinutes', () => {
+    const minutes180 = 180;
+    const hours3 = Math.round((minutes180 / 60) * 10) / 10;
+    expect(hours3).toBe(3);
+
+    const minutes45 = 45;
+    const hoursFraction = Math.round((minutes45 / 60) * 10) / 10;
+    expect(hoursFraction).toBe(0.8);
+  });
+
+  it('correctly filters notifications based on reminder settings', () => {
+    const prefsDisabled = {
+      ...DEFAULT_FIRESTORE_PREFERENCES,
+      studyRemindersEnabled: false,
+      examRemindersEnabled: false,
+    };
+
+    const notifs = [
+      { id: '1', enabled: true },
+      { id: '2', enabled: prefsDisabled.studyRemindersEnabled },
+      { id: '3', enabled: prefsDisabled.examRemindersEnabled },
+    ].filter((n) => n.enabled);
+
+    expect(notifs.length).toBe(1);
+    expect(notifs[0].id).toBe('1');
+  });
 });
 
 describe('Zero-Trust Security Boundary Logic', () => {

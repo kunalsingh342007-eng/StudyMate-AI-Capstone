@@ -67,43 +67,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Synchronize profile and preferences when a user signs in via Firebase
   const loadUserData = useCallback(async (user: User) => {
+    // 1. Immediately create and set local user profile so UI is instant and doesn't get stuck
+    const fallbackProfile: UserProfile = {
+      id: user.uid,
+      name: user.displayName || user.email?.split('@')[0] || 'Student',
+      email: user.email || '',
+      avatarUrl: user.photoURL || undefined,
+      academicLevel: 'Undergraduate Senior',
+      institution: '',
+      targetExam: 'Semester Finals',
+      targetExamDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+      bio: 'Student at StudyMate AI',
+      dailyGoalHours: 3,
+      streakDays: 1,
+      totalStudyMinutes: 0,
+      quizzesCompleted: 0,
+    };
+
+    setUserProfile(fallbackProfile);
+    StorageService.saveUserProfile(fallbackProfile);
+
+    // 2. Fetch or save to Cloud Firestore if available
     try {
       let profile = await FirestoreService.getUserProfile(user.uid);
       if (!profile) {
-        // Initialize user document for newly registered or first-time signed-in user
-        profile = {
-          id: user.uid,
-          name: user.displayName || user.email?.split('@')[0] || 'Student',
-          email: user.email || '',
-          avatarUrl: user.photoURL || undefined,
-          academicLevel: 'Undergraduate Senior',
-          institution: '',
-          targetExam: 'Semester Finals',
-          targetExamDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
-          bio: 'Student at StudyMate AI',
-          dailyGoalHours: 3,
-          streakDays: 1,
-          totalStudyMinutes: 0,
-          quizzesCompleted: 0,
-        };
-        await FirestoreService.saveUserProfile(user.uid, profile);
+        profile = fallbackProfile;
+        await FirestoreService.saveUserProfile(user.uid, profile).catch(() => {});
+      } else {
+        setUserProfile(profile);
+        StorageService.saveUserProfile(profile);
       }
-      setUserProfile(profile);
-
-      // Also persist to local StorageService for immediate sync across legacy components
-      StorageService.saveUserProfile(profile);
 
       // Load Firestore user preferences
       const userPrefs = await FirestoreService.getUserPreferences(user.uid);
-      setPreferences(userPrefs);
+      if (userPrefs) {
+        setPreferences(userPrefs);
+      }
     } catch (err) {
-      console.warn('[AuthContext] Error loading user Firestore data:', err);
+      console.warn('[AuthContext] Note on Firestore sync:', err);
     }
   }, []);
 
   // Listen to Firebase auth state observer
   useEffect(() => {
-    if (!auth || !isFirebaseConfigured) {
+    if (!auth) {
       setLoading(false);
       return;
     }
@@ -128,6 +135,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => unsubscribe();
   }, [loadUserData]);
+
+  // Synchronize theme with document element
+  useEffect(() => {
+    const applyTheme = () => {
+      const selectedTheme = preferences.theme || 'light';
+      let isDark = false;
+      if (selectedTheme === 'dark') {
+        isDark = true;
+      } else if (selectedTheme === 'system') {
+        isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    };
+
+    applyTheme();
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const listener = () => {
+      if (preferences.theme === 'system') {
+        applyTheme();
+      }
+    };
+    mediaQuery.addEventListener('change', listener);
+    return () => mediaQuery.removeEventListener('change', listener);
+  }, [preferences.theme]);
 
   const login = async (email: string, password: string) => {
     setLoading(true);
@@ -160,7 +197,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsDemoMode(false);
       localStorage.removeItem(DEMO_STORAGE_KEY);
 
-      // Save initial profile in Firestore
+      // Save initial profile in Firestore (non-fatal if Firestore rules are pending)
       const initialProfile: Partial<UserProfile> = {
         name: data.displayName || 'Student',
         email: data.email,
@@ -169,7 +206,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         targetExam: data.targetExam || 'Semester Finals',
         dailyGoalHours: 3,
       };
-      await FirestoreService.saveUserProfile(user.uid, initialProfile);
+      await FirestoreService.saveUserProfile(user.uid, initialProfile).catch(() => {});
       await loadUserData(user);
     } finally {
       setLoading(false);

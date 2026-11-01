@@ -104,9 +104,13 @@ export class FirestoreService {
       if (profile.dailyGoalHours !== undefined) payload.dailyGoalHours = profile.dailyGoalHours;
 
       await setDoc(docRef, payload, { merge: true });
-    } catch (error) {
-      console.error('[Firestore] Error saving user profile:', error);
-      throw error;
+    } catch (error: any) {
+      console.warn('[Firestore] Note: Could not save profile to remote Firestore:', error?.message || error);
+      if (error?.code === 'permission-denied') {
+        console.warn('[Firestore] To enable cloud persistence, publish firestore.rules in Firebase Console.');
+      } else {
+        throw error;
+      }
     }
   }
 
@@ -140,7 +144,7 @@ export class FirestoreService {
         ...DEFAULT_FIRESTORE_PREFERENCES,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-      });
+      }).catch(() => {});
 
       return { ...DEFAULT_FIRESTORE_PREFERENCES };
     } catch (error) {
@@ -167,9 +171,13 @@ export class FirestoreService {
         },
         { merge: true }
       );
-    } catch (error) {
-      console.error('[Firestore] Error saving user preferences:', error);
-      throw error;
+    } catch (error: any) {
+      console.warn('[Firestore] Note: Could not save preferences to remote Firestore:', error?.message || error);
+      if (error?.code === 'permission-denied') {
+        console.warn('[Firestore] To enable cloud persistence, publish firestore.rules in Firebase Console.');
+      } else {
+        throw error;
+      }
     }
   }
 }

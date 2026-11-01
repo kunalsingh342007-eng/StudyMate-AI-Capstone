@@ -14,6 +14,7 @@ import {
   AlertCircle,
   Clock,
   X,
+  Globe,
 } from 'lucide-react';
 import { useStorage } from '../../hooks/useStorage';
 import { useAuth } from '../../context/AuthContext';
@@ -30,7 +31,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onOpenAuthModal,
 }) => {
   const { progress, activePlan, spacedReviews } = useStorage();
-  const { userProfile, currentUser, logout, isDemoMode } = useAuth();
+  const { userProfile, preferences, currentUser, logout, isDemoMode } = useAuth();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
@@ -54,6 +55,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       icon: Clock,
       color: 'text-violet-600 bg-violet-50',
       time: '10m ago',
+      enabled: true,
     },
     {
       id: 'notif-2',
@@ -62,6 +64,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       icon: Flame,
       color: 'text-amber-600 bg-amber-50',
       time: '2h ago',
+      enabled: preferences.studyRemindersEnabled ?? true,
     },
     {
       id: 'notif-3',
@@ -70,8 +73,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       icon: Calendar,
       color: 'text-purple-600 bg-purple-50',
       time: 'Today',
+      enabled: preferences.examRemindersEnabled ?? true,
     },
-  ];
+  ].filter((n) => n.enabled);
 
   return (
     <header className="sticky top-0 z-30 h-16 sm:h-20 bg-white/90 backdrop-blur-md border-b border-purple-100/80 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
@@ -115,6 +119,16 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           <span>{examDaysLeft}d to Finals</span>
         </Link>
 
+        {/* Interface Language Badge */}
+        <Link
+          to="/settings"
+          className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-50 border border-purple-200/80 text-[11px] font-bold text-purple-700 hover:bg-purple-100 transition-colors"
+          title={`Interface Language: ${preferences.interfaceLanguage || 'English'} (Change in Settings)`}
+        >
+          <Globe className="w-3.5 h-3.5 text-purple-600" />
+          <span>{preferences.interfaceLanguage || 'English'}</span>
+        </Link>
+
         {/* Streak Pill */}
         <Link
           to="/progress"
@@ -134,7 +148,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             aria-label="View notifications"
           >
             <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-purple-600 ring-2 ring-white" />
+            {notifications.length > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-purple-600 ring-2 ring-white" />
+            )}
           </button>
 
           {notificationsOpen && (
@@ -148,7 +164,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                   <span className="text-xs font-bold text-slate-900 uppercase tracking-wide">
                     Study Notifications
                   </span>
-                  <span className="text-[11px] font-semibold text-purple-600">3 New</span>
+                  <span className="text-[11px] font-semibold text-purple-600">
+                    {notifications.length > 0 ? `${notifications.length} Active` : 'Muted'}
+                  </span>
                 </div>
 
                 <div className="space-y-2">

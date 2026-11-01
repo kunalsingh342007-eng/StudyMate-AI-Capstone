@@ -1,6 +1,7 @@
 import React from 'react';
-import { Flame, CheckCircle2, Clock, Calendar, HelpCircle, TrendingUp } from 'lucide-react';
+import { Flame, CheckCircle2, Clock, Calendar, HelpCircle, TrendingUp, Target } from 'lucide-react';
 import { StudyProgress, StudyPlan } from '../../types';
+import { useAuth } from '../../context/AuthContext';
 
 interface StatsGridProps {
   progress: StudyProgress;
@@ -8,6 +9,25 @@ interface StatsGridProps {
 }
 
 export const StatsGrid: React.FC<StatsGridProps> = ({ progress, activePlan }) => {
+  let preferences = {
+    dailyStudyGoalMinutes: 180,
+    defaultStudyDurationMinutes: 45,
+    studyRemindersEnabled: true,
+  };
+
+  try {
+    const auth = useAuth();
+    if (auth?.preferences) {
+      preferences = {
+        dailyStudyGoalMinutes: auth.preferences.dailyStudyGoalMinutes || 180,
+        defaultStudyDurationMinutes: auth.preferences.defaultStudyDurationMinutes || 45,
+        studyRemindersEnabled: auth.preferences.studyRemindersEnabled ?? true,
+      };
+    }
+  } catch {
+    // Falls back to safe default preferences when rendered outside AuthProvider
+  }
+
   const today = new Date();
   let daysUntilExam = 30;
   if (activePlan?.examDate) {
@@ -19,14 +39,32 @@ export const StatsGrid: React.FC<StatsGridProps> = ({ progress, activePlan }) =>
     ? Math.round((progress.completedTasksCount / activePlan.tasks.length) * 100)
     : 0;
 
+  const dailyGoalHours = Math.round((preferences.dailyStudyGoalMinutes / 60) * 10) / 10;
+
   const stats = [
     {
       label: 'Study Streak',
       value: `${progress.streakDays} Day${progress.streakDays === 1 ? '' : 's'}`,
-      sub: 'Active daily learning',
+      sub: preferences.studyRemindersEnabled ? 'Daily reminders active' : 'Streak tracking',
       icon: Flame,
       color: 'text-amber-500',
       bgColor: 'bg-amber-50',
+    },
+    {
+      label: 'Daily Study Goal',
+      value: `${dailyGoalHours}h / day`,
+      sub: `${preferences.defaultStudyDurationMinutes || 45}m focus chunks`,
+      icon: Target,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50',
+    },
+    {
+      label: 'Exam Countdown',
+      value: `${daysUntilExam} Days`,
+      sub: activePlan?.subject ? activePlan.subject.slice(0, 20) + '...' : 'Target Exam',
+      icon: Calendar,
+      color: 'text-indigo-600',
+      bgColor: 'bg-indigo-50',
     },
     {
       label: 'Completed Tasks',
@@ -35,14 +73,6 @@ export const StatsGrid: React.FC<StatsGridProps> = ({ progress, activePlan }) =>
       icon: CheckCircle2,
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50',
-    },
-    {
-      label: 'Exam Countdown',
-      value: `${daysUntilExam} Days`,
-      sub: activePlan?.subject ? activePlan.subject.slice(0, 20) + '...' : 'Target Exam',
-      icon: Calendar,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
     },
     {
       label: 'Total Hours Studied',

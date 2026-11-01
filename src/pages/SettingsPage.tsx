@@ -140,10 +140,14 @@ export const SettingsPage: React.FC = () => {
       // Update Firestore preferences document
       await updatePreferences(payload);
 
-      // Also update display name and academic level if changed
-      if (displayName.trim() && displayName !== userProfile.name) {
+      // Update display name, academic level, and daily goal hours
+      if (
+        displayName.trim() !== userProfile.name ||
+        academicLevel !== userProfile.academicLevel ||
+        Math.round((Number(dailyGoalMinutes) / 60) * 10) / 10 !== userProfile.dailyGoalHours
+      ) {
         await updateProfile({
-          name: displayName.trim(),
+          name: displayName.trim() || userProfile.name,
           academicLevel,
           dailyGoalHours: Math.round((Number(dailyGoalMinutes) / 60) * 10) / 10,
         });

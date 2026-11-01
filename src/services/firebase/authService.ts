@@ -26,8 +26,8 @@ export class AuthService {
    * Register a new user with email, password, and initial display name.
    */
   static async register(data: RegisterUserData): Promise<User> {
-    if (!auth || !isFirebaseConfigured) {
-      throw new Error('Firebase Authentication is not configured. Please check your environment configuration.');
+    if (!auth) {
+      throw new Error('Firebase Authentication is initializing or not available. Please refresh the page.');
     }
 
     try {
@@ -47,8 +47,8 @@ export class AuthService {
    * Sign in an existing user with email and password.
    */
   static async login(email: string, password: string): Promise<User> {
-    if (!auth || !isFirebaseConfigured) {
-      throw new Error('Firebase Authentication is not configured. Please check your environment configuration.');
+    if (!auth) {
+      throw new Error('Firebase Authentication is initializing or not available. Please refresh the page.');
     }
 
     try {
@@ -63,8 +63,8 @@ export class AuthService {
    * Sign in using Google Sign-In Popup.
    */
   static async loginWithGoogle(): Promise<User> {
-    if (!auth || !isFirebaseConfigured) {
-      throw new Error('Firebase Authentication is not configured. Please check your environment configuration.');
+    if (!auth) {
+      throw new Error('Firebase Authentication is initializing or not available. Please refresh the page.');
     }
 
     try {
@@ -87,7 +87,7 @@ export class AuthService {
    * Sign out the currently authenticated user.
    */
   static async logout(): Promise<void> {
-    if (!auth || !isFirebaseConfigured) {
+    if (!auth) {
       return;
     }
 
@@ -102,8 +102,8 @@ export class AuthService {
    * Send a password reset email to the specified address.
    */
   static async resetPassword(email: string): Promise<void> {
-    if (!auth || !isFirebaseConfigured) {
-      throw new Error('Firebase Authentication is not configured. Please check your environment configuration.');
+    if (!auth) {
+      throw new Error('Firebase Authentication is initializing or not available. Please refresh the page.');
     }
 
     if (!email || !email.includes('@')) {

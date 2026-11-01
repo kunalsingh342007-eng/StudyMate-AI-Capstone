@@ -5,10 +5,12 @@ import { ApiClient } from '../services/api/apiClient';
 import { ExplanationView } from '../components/explanation/ExplanationView';
 import { Banner } from '../components/layout/Banner';
 import { TopicExplanation, StudyLevel } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 export const ExplainPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const initialTopic = searchParams.get('topic') || '';
+  const { preferences } = useAuth();
 
   const [topic, setTopic] = useState(initialTopic || 'Explain recursion in C++');
   const [level, setLevel] = useState<StudyLevel>('Intermediate');
@@ -36,11 +38,17 @@ export const ExplainPage: React.FC = () => {
     setIsLoading(true);
     setError(null);
 
+    const languageInstruction =
+      preferences.interfaceLanguage && preferences.interfaceLanguage !== 'English'
+        ? `Please provide the complete explanation in ${preferences.interfaceLanguage}.`
+        : '';
+    const fullContext = [subjectContext.trim(), languageInstruction].filter(Boolean).join(' ');
+
     try {
       const res = await ApiClient.explainTopic({
         topic: targetTopic.trim(),
         level,
-        subjectContext: subjectContext.trim() || undefined,
+        subjectContext: fullContext || undefined,
       });
       setExplanation(res);
     } catch (err: any) {

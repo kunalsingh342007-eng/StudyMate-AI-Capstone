@@ -26,6 +26,7 @@ import { AdaptiveModal } from '../components/planner/AdaptiveModal';
 import { Banner } from '../components/layout/Banner';
 import { StudyTask, AdaptedPlanResponse, TopicMastery } from '../types';
 import { MasteryEngine } from '../services/learning/masteryEngine';
+import { useAuth } from '../context/AuthContext';
 
 export const DashboardPage: React.FC = () => {
   const {
@@ -39,6 +40,8 @@ export const DashboardPage: React.FC = () => {
     setActivePlan,
     userProfile,
   } = useStorage();
+  const { userProfile: authProfile, preferences } = useAuth();
+  const activeUserProfile = authProfile || userProfile;
   const [adaptiveTargetTask, setAdaptiveTargetTask] = useState<StudyTask | null>(null);
 
   // Compute actual weak areas with deterministic urgency & priority
@@ -140,10 +143,10 @@ export const DashboardPage: React.FC = () => {
             </span>
           </div>
           <h1 className="text-2xl sm:text-4xl font-extrabold text-[#1E1B4B] tracking-tight mt-1">
-            Welcome back, {userProfile.name.split(' ')[0] || 'Student'}! 👋
+            Welcome back, {activeUserProfile.name.split(' ')[0] || 'Student'}! 👋
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            You are preparing for <strong className="text-[#1E1B4B]">{activePlan?.subject || userProfile.targetExam || 'Semester Finals'}</strong> &bull; {examDaysLeft} days remaining
+            You are preparing for <strong className="text-[#1E1B4B]">{activePlan?.subject || activeUserProfile.targetExam || 'Semester Finals'}</strong> &bull; {examDaysLeft} days remaining
           </p>
         </div>
 

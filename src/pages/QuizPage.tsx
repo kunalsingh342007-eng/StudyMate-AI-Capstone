@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { ApiClient } from '../services/api/apiClient';
 import { useStorage } from '../hooks/useStorage';
+import { useAuth } from '../context/AuthContext';
 import { QuizRunner } from '../components/quiz/QuizRunner';
 import { QuizResultView } from '../components/quiz/QuizResultView';
 import { Banner } from '../components/layout/Banner';
@@ -24,6 +25,7 @@ export const QuizPage: React.FC = () => {
   const initialTopic = searchParams.get('topic') || '';
 
   const { quizHistory, saveQuizResult, activePlan } = useStorage();
+  const { preferences } = useAuth();
 
   const [subject, setSubject] = useState(activePlan?.subject || 'Computer Science');
   const [topic, setTopic] = useState(initialTopic || 'Data Structures & Algorithms');
@@ -54,10 +56,15 @@ export const QuizPage: React.FC = () => {
     setError(null);
     setCurrentResult(null);
 
+    const langSuffix =
+      preferences.interfaceLanguage && preferences.interfaceLanguage !== 'English'
+        ? ` (in ${preferences.interfaceLanguage})`
+        : '';
+
     try {
       const quiz = await ApiClient.generateQuiz({
-        subject: subject.trim(),
-        topic: topic.trim(),
+        subject: `${subject.trim()}${langSuffix}`,
+        topic: `${topic.trim()}${langSuffix}`,
         difficulty,
         questionCount,
       });
