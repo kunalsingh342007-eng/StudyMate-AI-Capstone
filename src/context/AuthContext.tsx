@@ -18,6 +18,8 @@ interface AuthContextValue {
   isDemoMode: boolean;
   isFirebaseConfigured: boolean;
   isAuthenticated: boolean;
+  theme: 'light' | 'dark' | 'system';
+  setTheme: (theme: 'light' | 'dark' | 'system') => void;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   register: (data: RegisterUserData) => Promise<void>;
@@ -47,6 +49,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [preferences, setPreferences] = useState<FirestorePreferences>(DEFAULT_FIRESTORE_PREFERENCES);
+
+  // Initialize theme from localStorage fallback immediately to prevent flash
+  const [themeState, setThemeState] = useState<'light' | 'dark' | 'system'>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('studymate_theme');
+      if (saved === 'light' || saved === 'dark' || saved === 'system') {
+        return saved;
+      }
+    }
+    return DEFAULT_FIRESTORE_PREFERENCES.theme || 'system';
+  });
 
   // Synchronize profile and preferences when a user signs in via Firebase
   const loadUserData = useCallback(async (user: User) => {
@@ -85,6 +98,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userPrefs = await FirestoreService.getUserPreferences(user.uid);
       if (userPrefs) {
         setPreferences(userPrefs);
+        if (userPrefs.theme) {
+          setThemeState(userPrefs.theme);
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('studymate_theme', userPrefs.theme);
+          }
+        }
       }
     } catch (err) {
       console.warn('[AuthContext] Note on Firestore sync:', err);
@@ -99,6 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      StorageService.setActiveUser(user ? user.uid : null);
       setCurrentUser(user);
       if (user) {
         await loadUserData(user);
@@ -111,35 +131,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, [loadUserData]);
 
-  // Synchronize theme with document element
-  useEffect(() => {
-    const applyTheme = () => {
-      const selectedTheme = preferences.theme || 'light';
-      let isDark = false;
-      if (selectedTheme === 'dark') {
-        isDark = true;
-      } else if (selectedTheme === 'system') {
-        isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      }
+  // Centralized immediate theme applicator
+  const applyResolvedTheme = useCallback((targetTheme: 'light' | 'dark' | 'system') => {
+    let isDark = false;
+    if (targetTheme === 'dark') {
+      isDark = true;
+    } else if (targetTheme === 'system') {
+      isDark = typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
 
+    if (typeof document !== 'undefined') {
       if (isDark) {
         document.documentElement.classList.add('dark');
       } else {
         document.documentElement.classList.remove('dark');
       }
-    };
+    }
+  }, []);
 
-    applyTheme();
+  // Immediate theme switch handler
+  const setTheme = useCallback((newTheme: 'light' | 'dark' | 'system') => {
+    setThemeState(newTheme);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('studymate_theme', newTheme);
+    }
+    applyResolvedTheme(newTheme);
+
+    setPreferences((prev) => ({ ...prev, theme: newTheme }));
+    if (currentUser?.uid) {
+      FirestoreService.saveUserPreferences(currentUser.uid, { theme: newTheme }).catch(() => {});
+    }
+  }, [currentUser, applyResolvedTheme]);
+
+  // Listen to system OS preference changes
+  useEffect(() => {
+    applyResolvedTheme(themeState);
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const listener = () => {
-      if (preferences.theme === 'system') {
-        applyTheme();
+    const handleSystemChange = () => {
+      if (themeState === 'system') {
+        applyResolvedTheme('system');
       }
     };
-    mediaQuery.addEventListener('change', listener);
-    return () => mediaQuery.removeEventListener('change', listener);
-  }, [preferences.theme]);
+    mediaQuery.addEventListener('change', handleSystemChange);
+    return () => mediaQuery.removeEventListener('change', handleSystemChange);
+  }, [themeState, applyResolvedTheme]);
 
   const login = async (email: string, password: string) => {
     setLoading(true);
@@ -186,6 +222,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       await AuthService.logout();
+      StorageService.setActiveUser(null);
       setCurrentUser(null);
       setUserProfile(StorageService.getUserProfile());
       setPreferences(DEFAULT_FIRESTORE_PREFERENCES);
@@ -243,6 +280,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isDemoMode,
     isFirebaseConfigured,
     isAuthenticated,
+    theme: themeState,
+    setTheme,
     login,
     loginWithGoogle,
     register,

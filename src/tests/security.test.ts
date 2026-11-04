@@ -393,4 +393,81 @@ describe('Phase 1: Full Express Endpoint HTTP Integration', () => {
     expect(data.error).toBeDefined();
     expect(data.stack).toBeUndefined(); // no stack traces
   });
+
+  it('enforces quiz ownership: prevents user B from submitting answers to user A quiz', async () => {
+    // 1. User A generates a quiz with their token
+    const quizRes = await fetch(`${baseUrl}/api/quiz`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer test-token-student-alice',
+      },
+      body: JSON.stringify({
+        subject: 'Algorithms',
+        topic: 'Graph Theory',
+        difficulty: 'Intermediate',
+        questionCount: 4,
+      }),
+    });
+    expect(quizRes.status).toBe(200);
+    const quiz = await quizRes.json();
+
+    // 2. User B tries to submit an answer to User A's quiz -> 403 Forbidden
+    const attackRes = await fetch(`${baseUrl}/api/quiz/answer`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer test-token-attacker-bob',
+      },
+      body: JSON.stringify({
+        quizId: quiz.id,
+        questionId: quiz.questions[0].id,
+        selectedAnswer: quiz.questions[0].options[0],
+      }),
+    });
+
+    expect(attackRes.status).toBe(403);
+    const attackData = await attackRes.json();
+    expect(attackData.error).toContain('permission');
+
+    // 3. User A can answer their own quiz successfully
+    const aliceRes = await fetch(`${baseUrl}/api/quiz/answer`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer test-token-student-alice',
+      },
+      body: JSON.stringify({
+        quizId: quiz.id,
+        questionId: quiz.questions[0].id,
+        selectedAnswer: quiz.questions[0].options[0],
+      }),
+    });
+    expect(aliceRes.status).toBe(200);
+  });
+});
+
+describe('Phase 1: Academic Level Normalization & Readiness Calibration', () => {
+  it('normalizes academic profiles like Undergraduate Senior to Advanced gracefully', () => {
+    const res = validateStudyPlanInput({
+      subject: 'Computer Architecture',
+      topics: ['Pipelining'],
+      examDate: '2026-06-30',
+      dailyHours: 2,
+      level: 'Undergraduate Senior',
+    });
+
+    expect(res.success).toBe(true);
+    expect(res.data?.level).toBe('Advanced');
+  });
+
+  it('normalizes beginner variations to Beginner', () => {
+    const res = validateExplainInput({
+      topic: 'Recursion',
+      level: 'Freshman Beginner',
+    });
+
+    expect(res.success).toBe(true);
+    expect(res.data?.level).toBe('Beginner');
+  });
 });

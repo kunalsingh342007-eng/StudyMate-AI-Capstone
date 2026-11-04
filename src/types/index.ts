@@ -688,6 +688,7 @@ export interface ExamReadinessScore {
   keyStrengths: string[];
   recommendedAction: string;
   lastCalculatedAt: string;
+  isProvisional?: boolean;
 }
 
 // 8. Learning Session (30-Minute Closed Loop)

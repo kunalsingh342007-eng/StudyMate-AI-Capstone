@@ -18,6 +18,8 @@ import {
   AIStatus,
 } from '../../types';
 
+import { auth } from '../firebase/firebase';
+
 class ApiError extends Error {
   constructor(public message: string, public status?: number, public retryable: boolean = true) {
     super(message);
@@ -25,13 +27,34 @@ class ApiError extends Error {
   }
 }
 
+async function getAuthHeader(): Promise<Record<string, string>> {
+  if (typeof window !== 'undefined' && auth?.currentUser) {
+    try {
+      const token = await auth.currentUser.getIdToken();
+      if (token) {
+        return { Authorization: `Bearer ${token}` };
+      }
+    } catch {
+      // Continue gracefully if token cannot be fetched
+    }
+  }
+  return {};
+}
+
 async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 45000): Promise<Response> {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
+    const authHeaders = await getAuthHeader();
+    const headers = {
+      ...authHeaders,
+      ...(options.headers || {}),
+    };
+
     const response = await fetch(url, {
       ...options,
+      headers,
       signal: controller.signal,
     });
     clearTimeout(id);

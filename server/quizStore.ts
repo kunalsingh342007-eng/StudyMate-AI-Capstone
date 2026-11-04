@@ -3,6 +3,7 @@ import { ServerQuiz, ClientQuiz } from '../src/types/index.js';
 interface StoredQuizEntry {
   quiz: ServerQuiz;
   storedAt: number;
+  ownerId?: string;
 }
 
 class ServerQuizStore {
@@ -25,7 +26,7 @@ class ServerQuizStore {
     }
   }
 
-  public saveQuiz(quiz: ServerQuiz): void {
+  public saveQuiz(quiz: ServerQuiz, ownerId?: string): void {
     // If capacity reached, evict oldest entry
     if (this.store.size >= this.maxEntries) {
       const oldestKey = this.store.keys().next().value;
@@ -37,6 +38,7 @@ class ServerQuizStore {
     this.store.set(quiz.id, {
       quiz,
       storedAt: Date.now(),
+      ownerId,
     });
   }
 
@@ -51,6 +53,20 @@ class ServerQuizStore {
     }
 
     return entry.quiz;
+  }
+
+  public getQuizOwner(quizId: string): string | undefined {
+    const entry = this.store.get(quizId);
+    return entry?.ownerId;
+  }
+
+  public verifyOwnership(quizId: string, userId?: string): boolean {
+    const entry = this.store.get(quizId);
+    if (!entry) return false;
+    // If the quiz has no owner recorded (e.g. guest or legacy), allow access
+    if (!entry.ownerId) return true;
+    // If it has an owner recorded, the caller must match the owner
+    return !!userId && entry.ownerId === userId;
   }
 
   public hasQuiz(quizId: string): boolean {

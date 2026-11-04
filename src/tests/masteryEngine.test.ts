@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { MasteryEngine } from '../services/learning/masteryEngine';
+import { ExamReadinessEngine } from '../services/learning/examReadinessEngine';
+import { WeeklyReportEngine } from '../services/learning/weeklyReportEngine';
 import { createExpressApp } from '../../server/app';
 import { serverQuizStore } from '../../server/quizStore';
 import { ServerQuiz } from '../types';
@@ -294,6 +296,62 @@ describe('Phase 2: Study Intelligence & Mastery Engine Tests', () => {
       expect(json.followUpQuestion).toBeDefined();
       expect(json.followUpQuestion.question).toBeDefined();
       expect(json.followUpQuestion.options.length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  describe('ExamReadinessEngine and WeeklyReportEngine Calibration', () => {
+    it('returns honest zero-evidence provisional readiness without fabricated numbers', () => {
+      const readiness = ExamReadinessEngine.calculateReadiness({
+        activePlan: null,
+        masteries: {},
+        quizHistory: [],
+        spacedReviews: [],
+        targetExamDate: '2026-06-30',
+      });
+
+      expect(readiness.isProvisional).toBe(true);
+      expect(readiness.overallScore).toBe(0);
+      expect(readiness.syllabusCoverage).toBe(0);
+      expect(readiness.masteryAverage).toBe(0);
+      expect(readiness.recentQuizPerformance).toBe(0);
+      expect(readiness.revisionCoverage).toBe(0);
+      expect(readiness.pyqPreparedness).toBe(0);
+      expect(readiness.status).toBe('At Risk');
+      expect(readiness.limitingFactors[0]).toContain('No assessment data recorded');
+      expect(readiness.recommendedAction).toContain('diagnostic quiz');
+    });
+
+    it('WeeklyReportEngine provides honest status without fabricating topics when unassessed', () => {
+      const emptyReadiness = ExamReadinessEngine.calculateReadiness({
+        activePlan: null,
+        masteries: {},
+        quizHistory: [],
+        spacedReviews: [],
+      });
+
+      const report = WeeklyReportEngine.generateReport({
+        progress: {
+          totalHoursStudied: 0,
+          streakDays: 1,
+          lastStudyDate: '2026-06-01',
+          completedTasksCount: 0,
+          totalTasksCount: 0,
+          quizzesTaken: 0,
+          averageQuizScore: 0,
+          weakTopicsIdentified: [],
+          masteredTopics: [],
+        },
+        activePlan: null,
+        masteries: {},
+        quizHistory: [],
+        mistakes: [],
+        readinessScore: emptyReadiness,
+      });
+
+      expect(report.strongestImprovementTopic).toBe('No assessed topics yet');
+      expect(report.strongestImprovementDelta).toBe(0);
+      expect(report.biggestConcernTopic).toBe('None identified yet');
+      expect(report.actionItemsNextWeek[0]).toContain('diagnostic quiz');
     });
   });
 });

@@ -26,7 +26,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   }, []);
 
   return (
-    <div className="flex h-screen bg-[#F8F7FC] text-[#1E1B4B] overflow-hidden font-sans">
+    <div className="flex h-screen bg-[#F8F7FC] dark:bg-[#0B1220] text-[#1E1B4B] dark:text-[#F8FAFC] overflow-hidden font-sans transition-colors duration-150">
       {/* Desktop Sidebar */}
       <div className="hidden lg:flex shrink-0 h-full">
         <Sidebar onOpenAuthModal={() => setAuthModalOpen(true)} />

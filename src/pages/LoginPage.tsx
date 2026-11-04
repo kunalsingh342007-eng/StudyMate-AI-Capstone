@@ -119,9 +119,9 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F7FC] text-[#1E1B4B] flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden font-sans selection:bg-purple-600 selection:text-white">
+    <div className="min-h-screen bg-[#F8F7FC] dark:bg-[#0B1220] text-[#1E1B4B] dark:text-[#F8FAFC] flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden font-sans selection:bg-purple-600 selection:text-white transition-colors duration-200">
       {/* Background ambient lighting */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-b from-purple-200/50 via-violet-100/30 to-transparent blur-3xl pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-b from-purple-200/50 dark:from-purple-900/20 via-violet-100/30 dark:via-violet-950/10 to-transparent blur-3xl pointer-events-none" />
 
       {/* Brand Header */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center relative z-10 mb-6">
@@ -130,25 +130,25 @@ export const LoginPage: React.FC = () => {
             <GraduationCap className="w-6 h-6 text-white" />
           </div>
           <div className="text-left">
-            <span className="text-2xl font-extrabold tracking-tight text-[#1E1B4B]">StudyMate</span>
-            <span className="ml-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700 rounded-md border border-purple-200">
+            <span className="text-2xl font-extrabold tracking-tight text-[#1E1B4B] dark:text-[#F8FAFC]">StudyMate</span>
+            <span className="ml-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 rounded-md border border-purple-200 dark:border-purple-800">
               AI Copilot
             </span>
           </div>
         </Link>
-        <h2 className="mt-4 text-2xl sm:text-3xl font-extrabold text-[#1E1B4B] tracking-tight">
+        <h2 className="mt-4 text-2xl sm:text-3xl font-extrabold text-[#1E1B4B] dark:text-[#F8FAFC] tracking-tight">
           {mode === 'signin' ? 'Sign in to your study workspace' : 'Create your student account'}
         </h2>
-        <p className="mt-1.5 text-xs sm:text-sm text-slate-500">
+        <p className="mt-1.5 text-xs sm:text-sm text-slate-500 dark:text-[#A7B4C8]">
           Personalized syllabus tracking, spaced retrieval, and adaptive AI tutoring
         </p>
       </div>
 
       {/* Main Auth Card */}
       <div className="sm:mx-auto sm:w-full sm:max-w-lg relative z-10 px-4 sm:px-0">
-        <div className="bg-white rounded-3xl shadow-xl shadow-purple-950/5 border border-purple-100 overflow-hidden">
+        <div className="bg-white dark:bg-[#172033] rounded-3xl shadow-xl shadow-purple-950/5 dark:shadow-black/40 border border-purple-100 dark:border-[#334155] overflow-hidden transition-colors duration-200">
           {/* Sign In / Sign Up Mode Switcher Tabs */}
-          <div className="flex border-b border-purple-100 bg-purple-50/40 p-1.5 gap-1.5">
+          <div className="flex border-b border-purple-100 dark:border-[#334155] bg-purple-50/40 dark:bg-[#0B1220]/60 p-1.5 gap-1.5">
             <button
               type="button"
               onClick={() => {
@@ -158,8 +158,8 @@ export const LoginPage: React.FC = () => {
               }}
               className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer ${
                 mode === 'signin'
-                  ? 'bg-white text-purple-900 shadow-xs border border-purple-100/60'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                  ? 'bg-white dark:bg-[#26344B] text-purple-900 dark:text-[#F8FAFC] shadow-xs border border-purple-100/60 dark:border-[#334155]'
+                  : 'text-slate-600 dark:text-[#A7B4C8] hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-[#172033]/60'
               }`}
             >
               Sign In
@@ -173,8 +173,8 @@ export const LoginPage: React.FC = () => {
               }}
               className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer ${
                 mode === 'signup'
-                  ? 'bg-white text-purple-900 shadow-xs border border-purple-100/60'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                  ? 'bg-white dark:bg-[#26344B] text-purple-900 dark:text-[#F8FAFC] shadow-xs border border-purple-100/60 dark:border-[#334155]'
+                  : 'text-slate-600 dark:text-[#A7B4C8] hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-[#172033]/60'
               }`}
             >
               Create Account
@@ -187,14 +187,14 @@ export const LoginPage: React.FC = () => {
             {errorMessage && (
               <div
                 role="alert"
-                className="p-3.5 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl text-xs font-semibold flex items-center gap-2.5 animate-in fade-in duration-200"
+                className="p-3.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-800 dark:text-rose-200 rounded-2xl text-xs font-semibold flex items-center gap-2.5 animate-in fade-in duration-200"
               >
-                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
                 <span className="flex-1">{errorMessage}</span>
                 <button
                   type="button"
                   onClick={() => setErrorMessage(null)}
-                  className="p-1 hover:bg-rose-100 rounded-lg text-rose-600"
+                  className="p-1 hover:bg-rose-100 dark:hover:bg-rose-900/50 rounded-lg text-rose-600 dark:text-rose-400 transition-colors"
                   aria-label="Dismiss error"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -206,9 +206,9 @@ export const LoginPage: React.FC = () => {
             {successMessage && (
               <div
                 role="status"
-                className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs font-semibold flex items-center gap-2 animate-in fade-in duration-200"
+                className="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 text-emerald-800 dark:text-emerald-200 rounded-2xl text-xs font-semibold flex items-center gap-2 animate-in fade-in duration-200"
               >
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span>{successMessage}</span>
               </div>
             )}
@@ -218,7 +218,7 @@ export const LoginPage: React.FC = () => {
               type="button"
               onClick={handleGoogleSignIn}
               disabled={isLoading}
-              className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-3 transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
+              className="w-full py-2.5 px-4 bg-white dark:bg-[#26344B] hover:bg-slate-50 dark:hover:bg-[#1E293B] border border-slate-300 dark:border-[#334155] text-slate-700 dark:text-[#F8FAFC] rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-3 transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
             >
               <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                 <path
@@ -243,8 +243,8 @@ export const LoginPage: React.FC = () => {
 
             {/* Divider */}
             <div className="relative flex items-center justify-center">
-              <div className="border-t border-slate-200 w-full" />
-              <span className="bg-white px-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider relative">
+              <div className="border-t border-slate-200 dark:border-[#334155] w-full" />
+              <span className="bg-white dark:bg-[#172033] px-3 text-[11px] font-bold text-slate-400 dark:text-[#A7B4C8] uppercase tracking-wider relative">
                 or with email
               </span>
             </div>
@@ -253,39 +253,45 @@ export const LoginPage: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === 'signup' && (
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700">Full Name</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-[#A7B4C8]">Full Name</label>
                   <div className="relative">
                     <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       required
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        if (errorMessage) setErrorMessage(null);
+                      }}
                       placeholder="Alex Rivera"
-                      className="w-full text-xs sm:text-sm pl-10 pr-4 py-2.5 rounded-xl border border-purple-200 focus:outline-purple-600 focus:border-purple-600 bg-white"
+                      className="w-full text-xs sm:text-sm pl-10 pr-4 py-2.5 rounded-xl border border-purple-200 dark:border-[#334155] focus:outline-purple-600 focus:border-purple-600 bg-white dark:bg-[#26344B] text-slate-900 dark:text-[#F8FAFC] placeholder-slate-400 dark:placeholder-slate-500"
                     />
                   </div>
                 </div>
               )}
 
               <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-700">Email Address</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-[#A7B4C8]">Email Address</label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="email"
                     required
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (errorMessage) setErrorMessage(null);
+                    }}
                     placeholder="student@university.edu"
-                    className="w-full text-xs sm:text-sm pl-10 pr-4 py-2.5 rounded-xl border border-purple-200 focus:outline-purple-600 focus:border-purple-600 bg-white"
+                    className="w-full text-xs sm:text-sm pl-10 pr-4 py-2.5 rounded-xl border border-purple-200 dark:border-[#334155] focus:outline-purple-600 focus:border-purple-600 bg-white dark:bg-[#26344B] text-slate-900 dark:text-[#F8FAFC] placeholder-slate-400 dark:placeholder-slate-500"
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold text-slate-700">Password</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-[#A7B4C8]">Password</label>
                   {mode === 'signin' && (
                     <button
                       type="button"
@@ -293,7 +299,7 @@ export const LoginPage: React.FC = () => {
                         setForgotEmail(email);
                         setShowForgotModal(true);
                       }}
-                      className="text-[11px] font-semibold text-purple-600 hover:text-purple-800 cursor-pointer"
+                      className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 cursor-pointer"
                     >
                       Forgot password?
                     </button>
@@ -306,20 +312,23 @@ export const LoginPage: React.FC = () => {
                     required
                     minLength={6}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (errorMessage) setErrorMessage(null);
+                    }}
                     placeholder="At least 6 characters"
-                    className="w-full text-xs sm:text-sm pl-10 pr-4 py-2.5 rounded-xl border border-purple-200 focus:outline-purple-600 focus:border-purple-600 bg-white"
+                    className="w-full text-xs sm:text-sm pl-10 pr-4 py-2.5 rounded-xl border border-purple-200 dark:border-[#334155] focus:outline-purple-600 focus:border-purple-600 bg-white dark:bg-[#26344B] text-slate-900 dark:text-[#F8FAFC] placeholder-slate-400 dark:placeholder-slate-500"
                   />
                 </div>
               </div>
 
               {mode === 'signup' && (
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700">Academic Standing</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-[#A7B4C8]">Academic Standing</label>
                   <select
                     value={academicLevel}
                     onChange={(e) => setAcademicLevel(e.target.value)}
-                    className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-purple-200 focus:outline-purple-600 focus:border-purple-600 bg-white text-slate-900"
+                    className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-purple-200 dark:border-[#334155] focus:outline-purple-600 focus:border-purple-600 bg-white dark:bg-[#26344B] text-slate-900 dark:text-[#F8FAFC]"
                   >
                     <option value="Undergraduate Freshman">Undergraduate Freshman</option>
                     <option value="Undergraduate Sophomore">Undergraduate Sophomore</option>
@@ -347,8 +356,8 @@ export const LoginPage: React.FC = () => {
               </button>
             </form>
 
-            <div className="pt-2 border-t border-purple-100 flex items-center justify-center gap-2 text-xs text-slate-500">
-              <Shield className="w-3.5 h-3.5 text-purple-600" />
+            <div className="pt-2 border-t border-purple-100 dark:border-[#334155] flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-[#A7B4C8]">
+              <Shield className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
               <span>
                 {isFirebaseConfigured
                   ? 'Protected with Firebase Authentication & Firestore'
@@ -359,8 +368,8 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {/* Footer link to landing */}
-        <p className="text-center text-xs text-slate-500 mt-6">
-          <Link to="/" className="text-purple-600 font-semibold hover:underline">
+        <p className="text-center text-xs text-slate-500 dark:text-[#A7B4C8] mt-6">
+          <Link to="/" className="text-purple-600 dark:text-purple-400 font-semibold hover:underline">
             &larr; Back to StudyMate AI Overview
           </Link>
         </p>
@@ -369,30 +378,30 @@ export const LoginPage: React.FC = () => {
       {/* Forgot Password Modal */}
       {showForgotModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200"
           role="dialog"
           aria-modal="true"
           aria-labelledby="forgot-modal-title"
         >
-          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-purple-100 p-6 space-y-4 relative">
+          <div className="bg-white dark:bg-[#172033] rounded-3xl max-w-md w-full shadow-2xl border border-purple-100 dark:border-[#334155] p-6 space-y-4 relative transition-colors duration-200">
             <button
               type="button"
               onClick={() => {
                 setShowForgotModal(false);
                 setForgotStatus(null);
               }}
-              className="absolute top-5 right-5 p-1.5 rounded-full hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors"
+              className="absolute top-5 right-5 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-[#26344B] text-slate-500 dark:text-[#A7B4C8] hover:text-slate-800 dark:hover:text-white transition-colors"
               aria-label="Close dialog"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="space-y-1">
-              <h3 id="forgot-modal-title" className="text-lg font-bold text-slate-900">
+              <h3 id="forgot-modal-title" className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC]">
                 Reset Your Password
               </h3>
-              <p className="text-xs text-slate-500">
-                Enter your university or registered email address and we will send you a password reset link.
+              <p className="text-xs text-slate-500 dark:text-[#A7B4C8]">
+                Enter your registered student email address and we will send you a password reset link.
               </p>
             </div>
 
@@ -400,14 +409,14 @@ export const LoginPage: React.FC = () => {
               <div
                 className={`p-3 rounded-xl text-xs font-semibold flex items-center gap-2 ${
                   forgotStatus.type === 'success'
-                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                    : 'bg-rose-50 text-rose-800 border border-rose-200'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-900/60'
+                    : 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-900/60'
                 }`}
               >
                 {forgotStatus.type === 'success' ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 ) : (
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
                 )}
                 <span>{forgotStatus.message}</span>
               </div>
@@ -422,7 +431,7 @@ export const LoginPage: React.FC = () => {
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
                   placeholder="student@university.edu"
-                  className="w-full text-xs sm:text-sm pl-10 pr-4 py-2.5 rounded-xl border border-purple-200 focus:outline-purple-600 focus:border-purple-600 bg-white"
+                  className="w-full text-xs sm:text-sm pl-10 pr-4 py-2.5 rounded-xl border border-purple-200 dark:border-[#334155] focus:outline-purple-600 focus:border-purple-600 bg-white dark:bg-[#26344B] text-slate-900 dark:text-[#F8FAFC] placeholder-slate-400 dark:placeholder-slate-500"
                 />
               </div>
 
@@ -430,7 +439,7 @@ export const LoginPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowForgotModal(false)}
-                  className="flex-1 py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                  className="flex-1 py-2.5 px-3 bg-slate-100 dark:bg-[#26344B] hover:bg-slate-200 dark:hover:bg-[#334155] text-slate-700 dark:text-[#F8FAFC] rounded-xl text-xs font-bold transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>

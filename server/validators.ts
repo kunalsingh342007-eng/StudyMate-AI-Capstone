@@ -18,8 +18,42 @@ export interface ValidationResult<T> {
   error?: string;
 }
 
-const VALID_LEVELS: StudyLevel[] = ['Beginner', 'Intermediate', 'Advanced'];
+export const VALID_LEVELS: StudyLevel[] = ['Beginner', 'Intermediate', 'Advanced'];
 const VALID_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+export function normalizeStudyLevel(level: any): StudyLevel | null {
+  if (typeof level !== 'string') return null;
+  const clean = level.trim().toLowerCase();
+  if (clean === 'beginner' || clean === 'intermediate' || clean === 'advanced') {
+    return (clean.charAt(0).toUpperCase() + clean.slice(1)) as StudyLevel;
+  }
+  if (
+    clean.includes('advance') ||
+    clean.includes('senior') ||
+    clean.includes('postgrad') ||
+    clean.includes('master') ||
+    clean.includes('phd')
+  ) {
+    return 'Advanced';
+  }
+  if (
+    clean.includes('begin') ||
+    clean.includes('freshman') ||
+    clean.includes('middle') ||
+    clean.includes('intro')
+  ) {
+    return 'Beginner';
+  }
+  if (
+    clean.includes('intermediate') ||
+    clean.includes('junior') ||
+    clean.includes('sophomore') ||
+    clean.includes('medium')
+  ) {
+    return 'Intermediate';
+  }
+  return null;
+}
 
 export function validateStudyPlanInput(body: any): ValidationResult<StudyPlanRequest> {
   if (!body || typeof body !== 'object') {
@@ -50,10 +84,11 @@ export function validateStudyPlanInput(body: any): ValidationResult<StudyPlanReq
 
   let parsedLevel: StudyLevel = 'Intermediate';
   if (level) {
-    if (!VALID_LEVELS.includes(level)) {
+    const normalized = normalizeStudyLevel(level);
+    if (!normalized) {
       return { success: false, error: 'Study level must be one of: Beginner, Intermediate, Advanced.' };
     }
-    parsedLevel = level;
+    parsedLevel = normalized;
   }
 
   let parsedTopics: string[] = [];
@@ -115,10 +150,11 @@ export function validateExplainInput(body: any): ValidationResult<ExplainRequest
 
   let parsedLevel: StudyLevel = 'Intermediate';
   if (level) {
-    if (!VALID_LEVELS.includes(level)) {
+    const normalized = normalizeStudyLevel(level);
+    if (!normalized) {
       return { success: false, error: 'Study level must be one of: Beginner, Intermediate, Advanced.' };
     }
-    parsedLevel = level;
+    parsedLevel = normalized;
   }
 
   let parsedContext: string | undefined = undefined;
@@ -155,10 +191,11 @@ export function validateQuizInput(body: any): ValidationResult<QuizRequest> {
 
   let parsedDiff: StudyLevel = 'Intermediate';
   if (difficulty) {
-    if (!VALID_LEVELS.includes(difficulty)) {
+    const normalized = normalizeStudyLevel(difficulty);
+    if (!normalized) {
       return { success: false, error: 'Difficulty must be one of: Beginner, Intermediate, Advanced.' };
     }
-    parsedDiff = difficulty;
+    parsedDiff = normalized;
   }
 
   let count = 4;

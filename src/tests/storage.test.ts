@@ -142,4 +142,85 @@ describe('StorageService', () => {
     expect(success).toBe(true);
     expect(StorageService.getActivePlan()?.subject).toBe('Physics');
   });
+
+  describe('User Account Data Isolation (Priority P0)', () => {
+    it('isolates user study plans and notes between Account A and Account B', () => {
+      // 1. Account A logs in and saves a plan
+      StorageService.setActiveUser('user-alice-123');
+      const alicePlan: StudyPlan = {
+        id: 'plan-alice',
+        subject: 'Algorithms (Alice)',
+        examDate: '2026-06-01',
+        dailyHours: 2,
+        level: 'Advanced',
+        topics: ['Dynamic Programming'],
+        weakTopics: [],
+        preferredDays: ['Monday'],
+        totalDays: 5,
+        totalStudyHours: 10,
+        assumptions: [],
+        tasks: [],
+        createdAt: new Date().toISOString(),
+      };
+      StorageService.setActivePlan(alicePlan);
+      expect(StorageService.getActivePlan()?.subject).toBe('Algorithms (Alice)');
+
+      // 2. Account B logs in -> Alice's plan must NOT be visible
+      StorageService.setActiveUser('user-bob-456');
+      expect(StorageService.getActivePlan()).toBeNull();
+
+      // 3. Bob saves his own plan
+      const bobPlan: StudyPlan = {
+        id: 'plan-bob',
+        subject: 'Operating Systems (Bob)',
+        examDate: '2026-07-01',
+        dailyHours: 3,
+        level: 'Intermediate',
+        topics: ['Virtual Memory'],
+        weakTopics: [],
+        preferredDays: ['Tuesday'],
+        totalDays: 7,
+        totalStudyHours: 21,
+        assumptions: [],
+        tasks: [],
+        createdAt: new Date().toISOString(),
+      };
+      StorageService.setActivePlan(bobPlan);
+      expect(StorageService.getActivePlan()?.subject).toBe('Operating Systems (Bob)');
+
+      // 4. Alice logs back in -> Alice's plan is restored, Bob's is not visible
+      StorageService.setActiveUser('user-alice-123');
+      expect(StorageService.getActivePlan()?.subject).toBe('Algorithms (Alice)');
+
+      // 5. User logs out (null user) -> neither Alice's nor Bob's plan is visible
+      StorageService.setActiveUser(null);
+      expect(StorageService.getActivePlan()).toBeNull();
+    });
+
+    it('does NOT automatically seed fake sample plans for an authenticated user', () => {
+      StorageService.setActiveUser('fresh-student-uid-777');
+      expect(StorageService.getActivePlan()).toBeNull();
+
+      // Calling seedSampleDataIfEmpty() should do nothing for an authenticated student
+      StorageService.seedSampleDataIfEmpty();
+      expect(StorageService.getActivePlan()).toBeNull();
+      expect(StorageService.getQuizHistory().length).toBe(0);
+      expect(Object.keys(StorageService.getMasteries()).length).toBe(0);
+    });
+
+    it('safely migrates legacy browser data to active user without data loss', () => {
+      // Setup legacy un-scoped data in localStorage
+      localStorage.setItem('studymate_active_plan', JSON.stringify({ id: 'legacy-p1', subject: 'Legacy Maths' }));
+
+      expect(StorageService.hasLegacyData()).toBe(true);
+
+      // Migrate to target user
+      const migrated = StorageService.migrateLegacyDataToActiveUser('target-user-888');
+      expect(migrated).toBe(true);
+
+      // Verify target user now has the plan
+      StorageService.setActiveUser('target-user-888');
+      expect(StorageService.getActivePlan()?.subject).toBe('Legacy Maths');
+    });
+  });
 });

@@ -25,11 +25,9 @@ export const MasteryEngine = {
     const { totalQuestions, correctQuestions, recentTrend = [], studyMinutes = 0, confidenceRatings = [] } = params;
 
     if (totalQuestions <= 0) {
-      const timeBonus = Math.min(30, Math.floor(studyMinutes / 30) * 10);
-      const score = Math.max(0, Math.min(100, timeBonus));
       return {
-        score,
-        level: score >= 75 ? 'Mastered' : score >= 50 ? 'Needs Practice' : 'Weak',
+        score: 0,
+        level: 'Needs Practice',
         accuracy: 0,
       };
     }

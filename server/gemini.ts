@@ -236,11 +236,16 @@ export async function generateStudyPlan(req: StudyPlanRequest): Promise<StudyPla
         topics: req.topics,
         weakTopics: req.weakTopics,
         preferredDays: req.preferredDays,
-        tasks: validated.tasks.map((t, idx) => ({
-          ...t,
-          id: t.id || `task-${idx + 1}`,
-          status: 'pending' as const,
-        })),
+        tasks: validated.tasks.map((t, idx) => {
+          const dailyMax = Math.round(req.dailyHours * 60);
+          const clampedDuration = Math.min(dailyMax, Math.max(25, t.durationMinutes || 60));
+          return {
+            ...t,
+            id: t.id || `task-${idx + 1}`,
+            durationMinutes: clampedDuration,
+            status: 'pending' as const,
+          };
+        }),
         totalDays: validated.totalDays > 0 ? validated.totalDays : Math.ceil(validated.tasks.length / 2),
         totalStudyHours: validated.totalStudyHours > 0 ? validated.totalStudyHours : Math.round((validated.tasks.reduce((sum, t) => sum + (t.durationMinutes || 60), 0) / 60) * 10) / 10,
         assumptions: Array.isArray(validated.assumptions) && validated.assumptions.length > 0

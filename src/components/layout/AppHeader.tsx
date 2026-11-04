@@ -15,6 +15,9 @@ import {
   Clock,
   X,
   Globe,
+  Sun,
+  Moon,
+  Laptop,
 } from 'lucide-react';
 import { useStorage } from '../../hooks/useStorage';
 import { useAuth } from '../../context/AuthContext';
@@ -31,7 +34,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onOpenAuthModal,
 }) => {
   const { progress, activePlan, spacedReviews } = useStorage();
-  const { userProfile, preferences, currentUser, logout } = useAuth();
+  const { userProfile, preferences, currentUser, logout, theme, setTheme } = useAuth();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
@@ -78,13 +81,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   ].filter((n) => n.enabled);
 
   return (
-    <header className="sticky top-0 z-30 h-16 sm:h-20 bg-white/90 backdrop-blur-md border-b border-purple-100/80 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-30 h-16 sm:h-20 bg-white/90 dark:bg-[#172033]/90 backdrop-blur-md border-b border-purple-100/80 dark:border-[#334155] px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 transition-colors">
       {/* Left: Mobile hamburger & Search bar */}
       <div className="flex items-center gap-3 sm:gap-4 flex-1 max-w-xl">
         <button
           type="button"
           onClick={onOpenMobileMenu}
-          className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-purple-50 lg:hidden"
+          className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-purple-50 dark:hover:bg-[#26344B] lg:hidden"
           aria-label="Open sidebar menu"
         >
           <Menu className="w-5 h-5" />
@@ -94,14 +97,14 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         <button
           type="button"
           onClick={onOpenSearch}
-          className="flex-1 flex items-center justify-between px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl bg-[#F8F7FC] hover:bg-[#F3F0FA] border border-purple-100 text-slate-400 hover:text-slate-600 transition-colors text-xs sm:text-sm text-left shadow-2xs group"
+          className="flex-1 flex items-center justify-between px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl bg-[#F8F7FC] dark:bg-[#26344B] hover:bg-[#F3F0FA] dark:hover:bg-[#1E293B] border border-purple-100 dark:border-[#334155] text-slate-500 dark:text-[#A7B4C8] hover:text-slate-700 dark:hover:text-white transition-colors text-xs sm:text-sm text-left shadow-2xs group cursor-pointer"
           aria-label="Search topics, tasks, notes"
         >
           <div className="flex items-center gap-2.5 truncate">
-            <Search className="w-4 h-4 text-purple-600 shrink-0 group-hover:scale-110 transition-transform" />
+            <Search className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0 group-hover:scale-110 transition-transform" />
             <span className="truncate">Search topics, tasks, notes...</span>
           </div>
-          <kbd className="hidden md:inline-flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-semibold text-purple-700 bg-purple-100/70 border border-purple-200 rounded-md">
+          <kbd className="hidden md:inline-flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-semibold text-purple-700 dark:text-purple-300 bg-purple-100/70 dark:bg-purple-900/40 border border-purple-200 dark:border-purple-800 rounded-md">
             ⌘K
           </kbd>
         </button>
@@ -112,44 +115,54 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         {/* Exam Countdown Pill */}
         <Link
           to="/planner"
-          className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-50 border border-purple-200/80 text-purple-800 text-xs font-semibold hover:bg-purple-100 transition-colors"
+          className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-50 dark:bg-purple-950/50 border border-purple-200/80 dark:border-purple-800/80 text-purple-800 dark:text-purple-300 text-xs font-semibold hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors"
           title="Days until target exam"
         >
-          <Calendar className="w-3.5 h-3.5 text-purple-600" />
+          <Calendar className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
           <span>{examDaysLeft}d to Finals</span>
-        </Link>
-
-        {/* Interface Language Badge */}
-        <Link
-          to="/settings"
-          className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-50 border border-purple-200/80 text-[11px] font-bold text-purple-700 hover:bg-purple-100 transition-colors"
-          title={`Interface Language: ${preferences.interfaceLanguage || 'English'} (Change in Settings)`}
-        >
-          <Globe className="w-3.5 h-3.5 text-purple-600" />
-          <span>{preferences.interfaceLanguage || 'English'}</span>
         </Link>
 
         {/* Streak Pill */}
         <Link
           to="/progress"
-          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold hover:bg-amber-100 transition-colors"
+          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 text-xs font-bold hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors"
           title="Current active streak"
         >
           <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
           <span>{progress.streakDays || userProfile.streakDays || 7}d</span>
         </Link>
 
+        {/* Instant Theme Toggle Button */}
+        <button
+          type="button"
+          onClick={() => {
+            const nextTheme = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light';
+            setTheme(nextTheme);
+          }}
+          className="p-2 sm:p-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:text-purple-700 dark:hover:text-purple-300 hover:bg-purple-50 dark:hover:bg-[#26344B] border border-transparent hover:border-purple-100 dark:hover:border-[#334155] transition-all cursor-pointer"
+          title={`Current Theme: ${theme.toUpperCase()} (Click to toggle)`}
+          aria-label={`Toggle color theme. Current: ${theme}`}
+        >
+          {theme === 'dark' ? (
+            <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400" />
+          ) : theme === 'light' ? (
+            <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
+          ) : (
+            <Laptop className="w-4 h-4 sm:w-5 sm:h-5 text-purple-500 dark:text-purple-400" />
+          )}
+        </button>
+
         {/* Notifications Dropdown */}
         <div className="relative">
           <button
             type="button"
             onClick={() => setNotificationsOpen(!notificationsOpen)}
-            className="p-2 sm:p-2.5 rounded-xl text-slate-600 hover:text-purple-700 hover:bg-purple-50 border border-transparent hover:border-purple-100 transition-all relative"
+            className="p-2 sm:p-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:text-purple-700 dark:hover:text-purple-300 hover:bg-purple-50 dark:hover:bg-[#26344B] border border-transparent hover:border-purple-100 dark:hover:border-[#334155] transition-all relative cursor-pointer"
             aria-label="View notifications"
           >
             <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
             {notifications.length > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-purple-600 ring-2 ring-white" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-purple-600 ring-2 ring-white dark:ring-[#172033]" />
             )}
           </button>
 
@@ -159,12 +172,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 className="fixed inset-0 z-40"
                 onClick={() => setNotificationsOpen(false)}
               />
-              <div className="absolute right-0 mt-2 w-80 sm:w-88 bg-white rounded-3xl shadow-xl border border-purple-100 z-50 p-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="flex items-center justify-between pb-2 border-b border-purple-100/80">
-                  <span className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+              <div className="absolute right-0 mt-2 w-80 sm:w-88 bg-white dark:bg-[#172033] rounded-3xl shadow-xl border border-purple-100 dark:border-[#334155] z-50 p-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="flex items-center justify-between pb-2 border-b border-purple-100/80 dark:border-[#334155]">
+                  <span className="text-xs font-bold text-slate-900 dark:text-[#F8FAFC] uppercase tracking-wide">
                     Study Notifications
                   </span>
-                  <span className="text-[11px] font-semibold text-purple-600">
+                  <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400">
                     {notifications.length > 0 ? `${notifications.length} Active` : 'Muted'}
                   </span>
                 </div>
@@ -175,17 +188,17 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                     return (
                       <div
                         key={n.id}
-                        className="p-2.5 rounded-2xl hover:bg-[#F8F7FC] transition-colors flex items-start gap-3"
+                        className="p-2.5 rounded-2xl hover:bg-[#F8F7FC] dark:hover:bg-[#26344B] transition-colors flex items-start gap-3"
                       >
-                        <div className={`p-2 rounded-xl shrink-0 ${n.color}`}>
+                        <div className={`p-2 rounded-xl shrink-0 ${n.color} dark:bg-purple-950/60 dark:text-purple-300`}>
                           <Icon className="w-4 h-4" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
-                            <p className="text-xs font-bold text-slate-900 truncate">{n.title}</p>
-                            <span className="text-[10px] text-slate-400">{n.time}</span>
+                            <p className="text-xs font-bold text-slate-900 dark:text-[#F8FAFC] truncate">{n.title}</p>
+                            <span className="text-[10px] text-slate-400 dark:text-[#64748B]">{n.time}</span>
                           </div>
-                          <p className="text-[11px] text-slate-600 mt-0.5 leading-snug">{n.desc}</p>
+                          <p className="text-[11px] text-slate-600 dark:text-[#A7B4C8] mt-0.5 leading-snug">{n.desc}</p>
                         </div>
                       </div>
                     );
@@ -195,7 +208,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 <Link
                   to="/progress"
                   onClick={() => setNotificationsOpen(false)}
-                  className="block text-center text-xs font-semibold text-purple-700 hover:text-purple-800 pt-1"
+                  className="block text-center text-xs font-semibold text-purple-700 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 pt-1"
                 >
                   View Learning Analytics &rarr;
                 </Link>
@@ -209,7 +222,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           <button
             type="button"
             onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-            className="flex items-center gap-2 p-1 pl-1.5 rounded-2xl hover:bg-purple-50 transition-colors focus:outline-none"
+            className="flex items-center gap-2 p-1 pl-1.5 rounded-2xl hover:bg-purple-50 dark:hover:bg-[#26344B] transition-colors focus:outline-none cursor-pointer"
             aria-label="User profile menu"
           >
             <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
@@ -227,27 +240,27 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 className="fixed inset-0 z-40"
                 onClick={() => setProfileDropdownOpen(false)}
               />
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-3xl shadow-xl border border-purple-100 z-50 p-2 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="px-3 py-2 border-b border-purple-100/80">
-                  <p className="text-xs font-bold text-slate-900 truncate">{userProfile.name || 'Alex Rivera'}</p>
-                  <p className="text-[11px] text-slate-500 truncate">{userProfile.email || 'alex.rivera@edu'}</p>
+              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#172033] rounded-3xl shadow-xl border border-purple-100 dark:border-[#334155] z-50 p-2 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-3 py-2 border-b border-purple-100/80 dark:border-[#334155]">
+                  <p className="text-xs font-bold text-slate-900 dark:text-[#F8FAFC] truncate">{userProfile.name || 'Alex Rivera'}</p>
+                  <p className="text-[11px] text-slate-500 dark:text-[#A7B4C8] truncate">{userProfile.email || 'alex.rivera@edu'}</p>
                 </div>
 
                 <Link
                   to="/profile"
                   onClick={() => setProfileDropdownOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-700 hover:text-purple-700 hover:bg-purple-50 rounded-xl transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-[#A7B4C8] hover:text-purple-700 dark:hover:text-purple-300 hover:bg-purple-50 dark:hover:bg-[#26344B] rounded-xl transition-colors"
                 >
-                  <User className="w-4 h-4 text-purple-600" />
+                  <User className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                   <span>Student Profile</span>
                 </Link>
 
                 <Link
                   to="/settings"
                   onClick={() => setProfileDropdownOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-700 hover:text-purple-700 hover:bg-purple-50 rounded-xl transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-[#A7B4C8] hover:text-purple-700 dark:hover:text-purple-300 hover:bg-purple-50 dark:hover:bg-[#26344B] rounded-xl transition-colors"
                 >
-                  <Settings className="w-4 h-4 text-purple-600" />
+                  <Settings className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                   <span>Settings & Preferences</span>
                 </Link>
 
@@ -261,9 +274,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                       onOpenAuthModal();
                     }
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors text-left cursor-pointer"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors text-left cursor-pointer"
                 >
-                  <LogOut className="w-4 h-4 text-rose-600" />
+                  <LogOut className="w-4 h-4 text-rose-600 dark:text-rose-400" />
                   <span>{currentUser ? 'Sign Out' : 'Sign In'}</span>
                 </button>
               </div>

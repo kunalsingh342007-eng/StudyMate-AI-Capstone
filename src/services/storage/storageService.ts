@@ -156,6 +156,49 @@ def fib(n):
   },
 ];
 
+let activeUserId: string | null = null;
+
+function getScopedKey(baseKey: string): string {
+  if (activeUserId) {
+    return `${baseKey}_usr_${activeUserId}`;
+  }
+  return `${baseKey}_guest`;
+}
+
+function getItem(baseKey: string): string | null {
+  try {
+    if (typeof localStorage === 'undefined') return null;
+    const scopedVal = localStorage.getItem(getScopedKey(baseKey));
+    if (scopedVal !== null) return scopedVal;
+    // Backward compatibility: If no scoped data exists, check if legacy unscoped data exists
+    // for guest or if this is the first run
+    if (!activeUserId) {
+      return localStorage.getItem(baseKey);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function setItem(baseKey: string, value: string): void {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem(getScopedKey(baseKey), value);
+  } catch (e) {
+    console.error(`[StorageService] Failed to set storage item for key ${baseKey}`, e);
+  }
+}
+
+function removeItem(baseKey: string): void {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.removeItem(getScopedKey(baseKey));
+  } catch (e) {
+    console.error(`[StorageService] Failed to remove storage item for key ${baseKey}`, e);
+  }
+}
+
 function notifyChange() {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('studymate_storage_change'));
@@ -163,10 +206,49 @@ function notifyChange() {
 }
 
 export const StorageService = {
+  // --- User Account Isolation & Context ---
+  setActiveUser(uid: string | null): void {
+    if (activeUserId === uid) return;
+    activeUserId = uid;
+    notifyChange();
+  },
+
+  getActiveUser(): string | null {
+    return activeUserId;
+  },
+
+  clearActiveUserData(): void {
+    if (typeof localStorage === 'undefined') return;
+    Object.values(STORAGE_KEYS).forEach((baseKey) => {
+      removeItem(baseKey);
+    });
+    notifyChange();
+  },
+
+  hasLegacyData(): boolean {
+    if (typeof localStorage === 'undefined') return false;
+    return !!localStorage.getItem(STORAGE_KEYS.ACTIVE_PLAN) || !!localStorage.getItem(STORAGE_KEYS.NOTES);
+  },
+
+  migrateLegacyDataToActiveUser(uid: string): boolean {
+    if (!uid || typeof localStorage === 'undefined') return false;
+    let migratedCount = 0;
+    Object.values(STORAGE_KEYS).forEach((baseKey) => {
+      const legacyVal = localStorage.getItem(baseKey);
+      const targetKey = `${baseKey}_usr_${uid}`;
+      if (legacyVal && !localStorage.getItem(targetKey)) {
+        localStorage.setItem(targetKey, legacyVal);
+        migratedCount++;
+      }
+    });
+    notifyChange();
+    return migratedCount > 0;
+  },
+
   // --- Active Plan ---
   getActivePlan(): StudyPlan | null {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.ACTIVE_PLAN);
+      const data = getItem(STORAGE_KEYS.ACTIVE_PLAN);
       return data ? JSON.parse(data) : null;
     } catch (e) {
       console.error('Failed to load active plan from storage', e);
@@ -176,7 +258,7 @@ export const StorageService = {
 
   setActivePlan(plan: StudyPlan): void {
     try {
-      localStorage.setItem(STORAGE_KEYS.ACTIVE_PLAN, JSON.stringify(plan));
+      setItem(STORAGE_KEYS.ACTIVE_PLAN, JSON.stringify(plan));
       // Also add/update in saved plans list
       this.savePlanToList(plan);
       this.recalculateProgress();
@@ -189,7 +271,7 @@ export const StorageService = {
   // --- Saved Plans List ---
   getSavedPlans(): StudyPlan[] {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.SAVED_PLANS);
+      const data = getItem(STORAGE_KEYS.SAVED_PLANS);
       return data ? JSON.parse(data) : [];
     } catch (e) {
       return [];
@@ -205,7 +287,7 @@ export const StorageService = {
       } else {
         current.unshift(plan);
       }
-      localStorage.setItem(STORAGE_KEYS.SAVED_PLANS, JSON.stringify(current));
+      setItem(STORAGE_KEYS.SAVED_PLANS, JSON.stringify(current));
     } catch (e) {
       console.error('Failed to update saved plans list', e);
     }
@@ -214,14 +296,14 @@ export const StorageService = {
   deletePlan(planId: string): void {
     try {
       const current = this.getSavedPlans().filter((p) => p.id !== planId);
-      localStorage.setItem(STORAGE_KEYS.SAVED_PLANS, JSON.stringify(current));
+      setItem(STORAGE_KEYS.SAVED_PLANS, JSON.stringify(current));
 
       const active = this.getActivePlan();
       if (active && active.id === planId) {
         if (current.length > 0) {
-          localStorage.setItem(STORAGE_KEYS.ACTIVE_PLAN, JSON.stringify(current[0]));
+          setItem(STORAGE_KEYS.ACTIVE_PLAN, JSON.stringify(current[0]));
         } else {
-          localStorage.removeItem(STORAGE_KEYS.ACTIVE_PLAN);
+          removeItem(STORAGE_KEYS.ACTIVE_PLAN);
         }
       }
       this.recalculateProgress();
@@ -270,7 +352,7 @@ export const StorageService = {
   // --- Quiz History ---
   getQuizHistory(): QuizResult[] {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.QUIZ_HISTORY);
+      const data = getItem(STORAGE_KEYS.QUIZ_HISTORY);
       return data ? JSON.parse(data) : [];
     } catch (e) {
       return [];
@@ -283,7 +365,7 @@ export const StorageService = {
       history.unshift(result);
       // Keep last 50 results
       const capped = history.slice(0, 50);
-      localStorage.setItem(STORAGE_KEYS.QUIZ_HISTORY, JSON.stringify(capped));
+      setItem(STORAGE_KEYS.QUIZ_HISTORY, JSON.stringify(capped));
 
       // --- Connect Quiz Performance to Mastery Engine ---
       const topicName = result.topic.trim();
@@ -405,7 +487,7 @@ export const StorageService = {
   // --- Topic Mastery Management ---
   getMasteries(): Record<string, TopicMastery> {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.TOPIC_MASTERY);
+      const data = getItem(STORAGE_KEYS.TOPIC_MASTERY);
       return data ? JSON.parse(data) : {};
     } catch (e) {
       return {};
@@ -421,7 +503,7 @@ export const StorageService = {
     try {
       const all = this.getMasteries();
       all[topicMastery.topic] = topicMastery;
-      localStorage.setItem(STORAGE_KEYS.TOPIC_MASTERY, JSON.stringify(all));
+      setItem(STORAGE_KEYS.TOPIC_MASTERY, JSON.stringify(all));
       this.recalculateProgress();
       notifyChange();
     } catch (e) {
@@ -432,7 +514,7 @@ export const StorageService = {
   // --- Mistake Analysis & Tracking ---
   getMistakes(): QuestionMistake[] {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.MISTAKES);
+      const data = getItem(STORAGE_KEYS.MISTAKES);
       return data ? JSON.parse(data) : [];
     } catch (e) {
       return [];
@@ -443,7 +525,7 @@ export const StorageService = {
     try {
       const current = this.getMistakes();
       current.unshift(mistake);
-      localStorage.setItem(STORAGE_KEYS.MISTAKES, JSON.stringify(current.slice(0, 100)));
+      setItem(STORAGE_KEYS.MISTAKES, JSON.stringify(current.slice(0, 100)));
       notifyChange();
     } catch (e) {
       console.error('Failed to save mistake', e);
@@ -457,7 +539,7 @@ export const StorageService = {
       if (idx !== -1) {
         current[idx].resolved = true;
         current[idx].resolvedAt = new Date().toISOString();
-        localStorage.setItem(STORAGE_KEYS.MISTAKES, JSON.stringify(current));
+        setItem(STORAGE_KEYS.MISTAKES, JSON.stringify(current));
         notifyChange();
       }
     } catch (e) {
@@ -471,7 +553,7 @@ export const StorageService = {
       const idx = current.findIndex((m) => m.id === mistakeId);
       if (idx !== -1) {
         current[idx].aiExplanation = explanation;
-        localStorage.setItem(STORAGE_KEYS.MISTAKES, JSON.stringify(current));
+        setItem(STORAGE_KEYS.MISTAKES, JSON.stringify(current));
         notifyChange();
       }
     } catch (e) {
@@ -482,7 +564,7 @@ export const StorageService = {
   // --- Spaced Repetition Reviews ---
   getSpacedReviews(): SpacedReviewItem[] {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.SPACED_REVIEWS);
+      const data = getItem(STORAGE_KEYS.SPACED_REVIEWS);
       const items: SpacedReviewItem[] = data ? JSON.parse(data) : [];
       const todayStr = new Date().toISOString().split('T')[0];
 
@@ -512,7 +594,7 @@ export const StorageService = {
       } else {
         current.unshift(item);
       }
-      localStorage.setItem(STORAGE_KEYS.SPACED_REVIEWS, JSON.stringify(current.slice(0, 100)));
+      setItem(STORAGE_KEYS.SPACED_REVIEWS, JSON.stringify(current.slice(0, 100)));
       notifyChange();
     } catch (e) {
       console.error('Failed to save spaced review item', e);
@@ -534,7 +616,7 @@ export const StorageService = {
           nextReviewAt: nextReview.nextReviewAt,
           dueStatus: 'upcoming',
         };
-        localStorage.setItem(STORAGE_KEYS.SPACED_REVIEWS, JSON.stringify(current));
+        setItem(STORAGE_KEYS.SPACED_REVIEWS, JSON.stringify(current));
 
         // If this review was tied to a mistake, mark the mistake resolved on good performance
         if (item.associatedMistakeId && quality === 'good') {
@@ -551,7 +633,7 @@ export const StorageService = {
   // --- Actual Study Sessions Logging ---
   getStudySessions(): StudySessionRecord[] {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.STUDY_SESSIONS);
+      const data = getItem(STORAGE_KEYS.STUDY_SESSIONS);
       return data ? JSON.parse(data) : [];
     } catch (e) {
       return [];
@@ -568,7 +650,7 @@ export const StorageService = {
     try {
       const current = this.getStudySessions();
       current.unshift(record);
-      localStorage.setItem(STORAGE_KEYS.STUDY_SESSIONS, JSON.stringify(current.slice(0, 100)));
+      setItem(STORAGE_KEYS.STUDY_SESSIONS, JSON.stringify(current.slice(0, 100)));
 
       // Boost mastery for this topic
       const topicName = session.topic.trim();
@@ -602,7 +684,7 @@ export const StorageService = {
   // --- Preferences ---
   getPreferences(): UserPreferences {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.PREFERENCES);
+      const data = getItem(STORAGE_KEYS.PREFERENCES);
       return data ? { ...DEFAULT_PREFERENCES, ...JSON.parse(data) } : DEFAULT_PREFERENCES;
     } catch (e) {
       return DEFAULT_PREFERENCES;
@@ -613,7 +695,7 @@ export const StorageService = {
     try {
       const current = this.getPreferences();
       const updated = { ...current, ...prefs };
-      localStorage.setItem(STORAGE_KEYS.PREFERENCES, JSON.stringify(updated));
+      setItem(STORAGE_KEYS.PREFERENCES, JSON.stringify(updated));
       notifyChange();
       return updated;
     } catch (e) {
@@ -625,7 +707,7 @@ export const StorageService = {
   // --- Progress & Analytics ---
   getProgress(): StudyProgress {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.PROGRESS);
+      const data = getItem(STORAGE_KEYS.PROGRESS);
       return data ? { ...DEFAULT_PROGRESS, ...JSON.parse(data) } : this.recalculateProgress();
     } catch (e) {
       return DEFAULT_PROGRESS;
@@ -681,7 +763,7 @@ export const StorageService = {
 
     const currentProg = (() => {
       try {
-        const d = localStorage.getItem(STORAGE_KEYS.PROGRESS);
+        const d = getItem(STORAGE_KEYS.PROGRESS);
         return d ? JSON.parse(d) : DEFAULT_PROGRESS;
       } catch {
         return DEFAULT_PROGRESS;
@@ -717,7 +799,7 @@ export const StorageService = {
     };
 
     try {
-      localStorage.setItem(STORAGE_KEYS.PROGRESS, JSON.stringify(newProgress));
+      setItem(STORAGE_KEYS.PROGRESS, JSON.stringify(newProgress));
     } catch (e) {
       // ignore
     }
@@ -725,9 +807,14 @@ export const StorageService = {
     return newProgress;
   },
 
-  // --- Seed Initial Sample Data for Instant Showcase ---
-  seedSampleDataIfEmpty(): void {
+  // --- Seed Initial Sample Data for Showcase / Guest Demo ---
+  seedSampleDataIfEmpty(force: boolean = false): void {
     if (typeof window === 'undefined') return;
+    // Under User Data Isolation: NEVER automatically seed fake study plans, fake quiz history,
+    // or fake masteries for an authenticated student's account.
+    if (!force && activeUserId) {
+      return;
+    }
     if (!this.getActivePlan()) {
       const today = new Date();
       const sampleTasks: StudyTask[] = [
@@ -1115,13 +1202,13 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
       });
 
       // Seed initial notes if empty
-      if (!localStorage.getItem(STORAGE_KEYS.NOTES)) {
-        localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(SEED_NOTES));
+      if (!getItem(STORAGE_KEYS.NOTES)) {
+        setItem(STORAGE_KEYS.NOTES, JSON.stringify(SEED_NOTES));
       }
 
       // Seed initial user profile if empty
-      if (!localStorage.getItem(STORAGE_KEYS.USER_PROFILE)) {
-        localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(DEFAULT_USER_PROFILE));
+      if (!getItem(STORAGE_KEYS.USER_PROFILE)) {
+        setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(DEFAULT_USER_PROFILE));
       }
     }
   },
@@ -1129,7 +1216,7 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
   // --- Syllabus Intelligence ---
   getSyllabus(): SyllabusStructure | null {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.SYLLABUS);
+      const data = getItem(STORAGE_KEYS.SYLLABUS);
       return data ? JSON.parse(data) : null;
     } catch (e) {
       return null;
@@ -1138,7 +1225,7 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
 
   saveSyllabus(syllabus: SyllabusStructure): void {
     try {
-      localStorage.setItem(STORAGE_KEYS.SYLLABUS, JSON.stringify(syllabus));
+      setItem(STORAGE_KEYS.SYLLABUS, JSON.stringify(syllabus));
       notifyChange();
     } catch (e) {
       console.error('Failed to save syllabus', e);
@@ -1148,7 +1235,7 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
   // --- Study Materials ---
   getMaterials(): StudyMaterial[] {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.STUDY_MATERIALS);
+      const data = getItem(STORAGE_KEYS.STUDY_MATERIALS);
       return data ? JSON.parse(data) : [];
     } catch (e) {
       return [];
@@ -1164,7 +1251,7 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
       } else {
         current.unshift(material);
       }
-      localStorage.setItem(STORAGE_KEYS.STUDY_MATERIALS, JSON.stringify(current));
+      setItem(STORAGE_KEYS.STUDY_MATERIALS, JSON.stringify(current));
       notifyChange();
     } catch (e) {
       console.error('Failed to save study material', e);
@@ -1174,7 +1261,7 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
   deleteMaterial(id: string): void {
     try {
       const current = this.getMaterials().filter((m) => m.id !== id);
-      localStorage.setItem(STORAGE_KEYS.STUDY_MATERIALS, JSON.stringify(current));
+      setItem(STORAGE_KEYS.STUDY_MATERIALS, JSON.stringify(current));
       notifyChange();
     } catch (e) {
       console.error('Failed to delete study material', e);
@@ -1184,7 +1271,7 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
   // --- Intelligent Flashcards ---
   getFlashcards(): Flashcard[] {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.FLASHCARDS);
+      const data = getItem(STORAGE_KEYS.FLASHCARDS);
       return data ? JSON.parse(data) : [];
     } catch (e) {
       return [];
@@ -1200,7 +1287,7 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
       } else {
         current.unshift(card);
       }
-      localStorage.setItem(STORAGE_KEYS.FLASHCARDS, JSON.stringify(current));
+      setItem(STORAGE_KEYS.FLASHCARDS, JSON.stringify(current));
       notifyChange();
     } catch (e) {
       console.error('Failed to save flashcard', e);
@@ -1222,7 +1309,7 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
       };
 
       current[idx] = updatedCard;
-      localStorage.setItem(STORAGE_KEYS.FLASHCARDS, JSON.stringify(current));
+      setItem(STORAGE_KEYS.FLASHCARDS, JSON.stringify(current));
       notifyChange();
       return updatedCard;
     } catch (e) {
@@ -1234,7 +1321,7 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
   deleteFlashcard(cardId: string): void {
     try {
       const current = this.getFlashcards().filter((c) => c.id !== cardId);
-      localStorage.setItem(STORAGE_KEYS.FLASHCARDS, JSON.stringify(current));
+      setItem(STORAGE_KEYS.FLASHCARDS, JSON.stringify(current));
       notifyChange();
     } catch (e) {
       console.error('Failed to delete flashcard', e);
@@ -1244,7 +1331,7 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
   // --- PYQ Analyses ---
   getPYQAnalyses(): PYQAnalysisResult[] {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.PYQ_ANALYSES);
+      const data = getItem(STORAGE_KEYS.PYQ_ANALYSES);
       return data ? JSON.parse(data) : [];
     } catch (e) {
       return [];
@@ -1260,7 +1347,7 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
     try {
       const current = this.getPYQAnalyses();
       current.unshift(analysis);
-      localStorage.setItem(STORAGE_KEYS.PYQ_ANALYSES, JSON.stringify(current.slice(0, 20)));
+      setItem(STORAGE_KEYS.PYQ_ANALYSES, JSON.stringify(current.slice(0, 20)));
       notifyChange();
     } catch (e) {
       console.error('Failed to save PYQ analysis', e);
@@ -1270,7 +1357,7 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
   // --- Mock Exam Sessions ---
   getMockExams(): MockExamSession[] {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.MOCK_EXAMS);
+      const data = getItem(STORAGE_KEYS.MOCK_EXAMS);
       return data ? JSON.parse(data) : [];
     } catch (e) {
       return [];
@@ -1286,7 +1373,7 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
       } else {
         current.unshift(session);
       }
-      localStorage.setItem(STORAGE_KEYS.MOCK_EXAMS, JSON.stringify(current.slice(0, 30)));
+      setItem(STORAGE_KEYS.MOCK_EXAMS, JSON.stringify(current.slice(0, 30)));
       notifyChange();
     } catch (e) {
       console.error('Failed to save mock exam', e);
@@ -1296,7 +1383,7 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
   // --- Contextual AI Tutor Chat ---
   getTutorMessages(): TutorMessage[] {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.TUTOR_CHAT);
+      const data = getItem(STORAGE_KEYS.TUTOR_CHAT);
       return data ? JSON.parse(data) : [];
     } catch (e) {
       return [];
@@ -1307,7 +1394,7 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
     try {
       const current = this.getTutorMessages();
       current.push(msg);
-      localStorage.setItem(STORAGE_KEYS.TUTOR_CHAT, JSON.stringify(current.slice(-50)));
+      setItem(STORAGE_KEYS.TUTOR_CHAT, JSON.stringify(current.slice(-50)));
       notifyChange();
     } catch (e) {
       console.error('Failed to save tutor message', e);
@@ -1316,7 +1403,7 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
 
   clearTutorChat(): void {
     try {
-      localStorage.removeItem(STORAGE_KEYS.TUTOR_CHAT);
+      removeItem(STORAGE_KEYS.TUTOR_CHAT);
       notifyChange();
     } catch (e) {
       // ignore
@@ -1326,10 +1413,14 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
   // --- Study Notes ---
   getNotes(): StudyNote[] {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.NOTES);
-      return data ? JSON.parse(data) : SEED_NOTES;
+      const data = getItem(STORAGE_KEYS.NOTES);
+      if (data) {
+        return JSON.parse(data);
+      }
+      // Authenticated students start with fresh notes collection; unauthenticated guests can see sample notes
+      return activeUserId ? [] : SEED_NOTES;
     } catch (e) {
-      return SEED_NOTES;
+      return activeUserId ? [] : SEED_NOTES;
     }
   },
 
@@ -1342,7 +1433,7 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
       } else {
         notes.unshift(note);
       }
-      localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(notes));
+      setItem(STORAGE_KEYS.NOTES, JSON.stringify(notes));
       notifyChange();
     } catch (e) {
       console.error('Failed to save study note', e);
@@ -1352,7 +1443,7 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
   deleteNote(id: string): void {
     try {
       const notes = this.getNotes().filter((n) => n.id !== id);
-      localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(notes));
+      setItem(STORAGE_KEYS.NOTES, JSON.stringify(notes));
       notifyChange();
     } catch (e) {
       console.error('Failed to delete note', e);
@@ -1364,7 +1455,7 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
       const notes = this.getNotes().map((n) =>
         n.id === id ? { ...n, isPinned: !n.isPinned, updatedAt: new Date().toISOString() } : n
       );
-      localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(notes));
+      setItem(STORAGE_KEYS.NOTES, JSON.stringify(notes));
       notifyChange();
     } catch (e) {
       console.error('Failed to toggle pin on note', e);
@@ -1374,7 +1465,7 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
   // --- Student Profile ---
   getUserProfile(): UserProfile {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.USER_PROFILE);
+      const data = getItem(STORAGE_KEYS.USER_PROFILE);
       if (data) {
         return JSON.parse(data);
       }
@@ -1388,7 +1479,7 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
     try {
       const current = this.getUserProfile();
       const updated: UserProfile = { ...current, ...profile };
-      localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(updated));
+      setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(updated));
       notifyChange();
       return updated;
     } catch (e) {
@@ -1398,7 +1489,7 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
   },
 
   clearAllData(): void {
-    Object.values(STORAGE_KEYS).forEach((k) => localStorage.removeItem(k));
+    Object.values(STORAGE_KEYS).forEach((k) => removeItem(k));
     notifyChange();
   },
 
@@ -1406,7 +1497,7 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
     const backup: Record<string, any> = {};
     Object.entries(STORAGE_KEYS).forEach(([name, key]) => {
       try {
-        const item = localStorage.getItem(key);
+        const item = getItem(key);
         if (item) backup[name] = JSON.parse(item);
       } catch (e) {
         // ignore
@@ -1418,23 +1509,23 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
   importDataJson(jsonString: string): boolean {
     try {
       const data = JSON.parse(jsonString);
-      if (data.ACTIVE_PLAN) localStorage.setItem(STORAGE_KEYS.ACTIVE_PLAN, JSON.stringify(data.ACTIVE_PLAN));
-      if (data.SAVED_PLANS) localStorage.setItem(STORAGE_KEYS.SAVED_PLANS, JSON.stringify(data.SAVED_PLANS));
-      if (data.QUIZ_HISTORY) localStorage.setItem(STORAGE_KEYS.QUIZ_HISTORY, JSON.stringify(data.QUIZ_HISTORY));
-      if (data.PREFERENCES) localStorage.setItem(STORAGE_KEYS.PREFERENCES, JSON.stringify(data.PREFERENCES));
-      if (data.PROGRESS) localStorage.setItem(STORAGE_KEYS.PROGRESS, JSON.stringify(data.PROGRESS));
-      if (data.TOPIC_MASTERY) localStorage.setItem(STORAGE_KEYS.TOPIC_MASTERY, JSON.stringify(data.TOPIC_MASTERY));
-      if (data.MISTAKES) localStorage.setItem(STORAGE_KEYS.MISTAKES, JSON.stringify(data.MISTAKES));
-      if (data.SPACED_REVIEWS) localStorage.setItem(STORAGE_KEYS.SPACED_REVIEWS, JSON.stringify(data.SPACED_REVIEWS));
-      if (data.STUDY_SESSIONS) localStorage.setItem(STORAGE_KEYS.STUDY_SESSIONS, JSON.stringify(data.STUDY_SESSIONS));
-      if (data.SYLLABUS) localStorage.setItem(STORAGE_KEYS.SYLLABUS, JSON.stringify(data.SYLLABUS));
-      if (data.STUDY_MATERIALS) localStorage.setItem(STORAGE_KEYS.STUDY_MATERIALS, JSON.stringify(data.STUDY_MATERIALS));
-      if (data.FLASHCARDS) localStorage.setItem(STORAGE_KEYS.FLASHCARDS, JSON.stringify(data.FLASHCARDS));
-      if (data.PYQ_ANALYSES) localStorage.setItem(STORAGE_KEYS.PYQ_ANALYSES, JSON.stringify(data.PYQ_ANALYSES));
-      if (data.MOCK_EXAMS) localStorage.setItem(STORAGE_KEYS.MOCK_EXAMS, JSON.stringify(data.MOCK_EXAMS));
-      if (data.TUTOR_CHAT) localStorage.setItem(STORAGE_KEYS.TUTOR_CHAT, JSON.stringify(data.TUTOR_CHAT));
-      if (data.NOTES) localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(data.NOTES));
-      if (data.USER_PROFILE) localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(data.USER_PROFILE));
+      if (data.ACTIVE_PLAN) setItem(STORAGE_KEYS.ACTIVE_PLAN, JSON.stringify(data.ACTIVE_PLAN));
+      if (data.SAVED_PLANS) setItem(STORAGE_KEYS.SAVED_PLANS, JSON.stringify(data.SAVED_PLANS));
+      if (data.QUIZ_HISTORY) setItem(STORAGE_KEYS.QUIZ_HISTORY, JSON.stringify(data.QUIZ_HISTORY));
+      if (data.PREFERENCES) setItem(STORAGE_KEYS.PREFERENCES, JSON.stringify(data.PREFERENCES));
+      if (data.PROGRESS) setItem(STORAGE_KEYS.PROGRESS, JSON.stringify(data.PROGRESS));
+      if (data.TOPIC_MASTERY) setItem(STORAGE_KEYS.TOPIC_MASTERY, JSON.stringify(data.TOPIC_MASTERY));
+      if (data.MISTAKES) setItem(STORAGE_KEYS.MISTAKES, JSON.stringify(data.MISTAKES));
+      if (data.SPACED_REVIEWS) setItem(STORAGE_KEYS.SPACED_REVIEWS, JSON.stringify(data.SPACED_REVIEWS));
+      if (data.STUDY_SESSIONS) setItem(STORAGE_KEYS.STUDY_SESSIONS, JSON.stringify(data.STUDY_SESSIONS));
+      if (data.SYLLABUS) setItem(STORAGE_KEYS.SYLLABUS, JSON.stringify(data.SYLLABUS));
+      if (data.STUDY_MATERIALS) setItem(STORAGE_KEYS.STUDY_MATERIALS, JSON.stringify(data.STUDY_MATERIALS));
+      if (data.FLASHCARDS) setItem(STORAGE_KEYS.FLASHCARDS, JSON.stringify(data.FLASHCARDS));
+      if (data.PYQ_ANALYSES) setItem(STORAGE_KEYS.PYQ_ANALYSES, JSON.stringify(data.PYQ_ANALYSES));
+      if (data.MOCK_EXAMS) setItem(STORAGE_KEYS.MOCK_EXAMS, JSON.stringify(data.MOCK_EXAMS));
+      if (data.TUTOR_CHAT) setItem(STORAGE_KEYS.TUTOR_CHAT, JSON.stringify(data.TUTOR_CHAT));
+      if (data.NOTES) setItem(STORAGE_KEYS.NOTES, JSON.stringify(data.NOTES));
+      if (data.USER_PROFILE) setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(data.USER_PROFILE));
       this.recalculateProgress();
       notifyChange();
       return true;

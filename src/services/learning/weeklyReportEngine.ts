@@ -37,10 +37,10 @@ export const WeeklyReportEngine = {
 
     // Determine strongest improvement and biggest concern topics
     const masteryList = Object.values(masteries);
-    let strongestImprovementTopic = 'Data Structures';
-    let strongestImprovementDelta = 14;
-    let biggestConcernTopic = 'Graph Traversal';
-    let biggestConcernAccuracy = 42;
+    let strongestImprovementTopic = 'No assessed topics yet';
+    let strongestImprovementDelta = 0;
+    let biggestConcernTopic = 'None identified yet';
+    let biggestConcernAccuracy = 0;
 
     if (masteryList.length > 0) {
       // Find highest accuracy topic
@@ -57,11 +57,16 @@ export const WeeklyReportEngine = {
     const resolvedMistakesCount = mistakes.filter((m) => m.resolved).length;
 
     // Action items
-    const actionItemsNextWeek: string[] = [
-      `Review core principles for ${biggestConcernTopic} before scheduling more drills.`,
-      `Clear any due spaced retrieval cards to maintain retention in ${strongestImprovementTopic}.`,
-      `Complete a timed Mock Exam to test pacing under realistic exam constraints.`,
-    ];
+    const actionItemsNextWeek: string[] = [];
+    if (masteryList.length > 0) {
+      actionItemsNextWeek.push(`Review core principles for ${biggestConcernTopic} before scheduling more drills.`);
+      actionItemsNextWeek.push(`Clear any due spaced retrieval cards to maintain retention in ${strongestImprovementTopic}.`);
+      actionItemsNextWeek.push(`Complete a timed Mock Exam to test pacing under realistic exam constraints.`);
+    } else {
+      actionItemsNextWeek.push('Take your first diagnostic quiz to establish topic mastery baselines.');
+      actionItemsNextWeek.push('Upload your syllabus or study materials to generate a structured revision plan.');
+      actionItemsNextWeek.push('Set up daily study goals to begin tracking active recall momentum.');
+    }
 
     if (activePlan) {
       actionItemsNextWeek.unshift(`Complete scheduled milestones for ${activePlan.subject}.`);

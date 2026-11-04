@@ -47,7 +47,7 @@ export const ExamReadinessEngine = {
       const completed = activePlan.tasks.filter((t) => t.status === 'completed').length;
       syllabusCoverage = Math.round((completed / activePlan.tasks.length) * 100);
     } else {
-      syllabusCoverage = 50; // Neutral baseline if no plan generated yet
+      syllabusCoverage = 0; // Honest zero when no active syllabus plan exists
     }
 
     // 3. Topic Mastery Average (Weight: 30%)
@@ -57,7 +57,7 @@ export const ExamReadinessEngine = {
       const sum = masteryValues.reduce((acc, m) => acc + m.score, 0);
       masteryAverage = Math.round(sum / masteryValues.length);
     } else {
-      masteryAverage = 45; // Baseline prior to quizzes
+      masteryAverage = 0; // Honest zero prior to quizzes
     }
 
     // 4. Recent Quiz Performance (Weight: 20%)
@@ -67,20 +67,20 @@ export const ExamReadinessEngine = {
       const sum = recent.reduce((acc, q) => acc + q.percentage, 0);
       recentQuizPerformance = Math.round(sum / recent.length);
     } else {
-      recentQuizPerformance = masteryAverage;
+      recentQuizPerformance = 0;
     }
 
     // 5. Revision & Spaced Repetition Coverage (Weight: 15%)
-    let revisionCoverage = 70;
+    let revisionCoverage = 0;
     if (spacedReviews.length > 0) {
       const dueCount = spacedReviews.filter((r) => r.dueStatus === 'due' || r.dueStatus === 'overdue').length;
       const totalReviews = spacedReviews.length;
       const pendingRatio = dueCount / totalReviews;
-      revisionCoverage = Math.max(10, Math.min(100, Math.round((1 - pendingRatio) * 100)));
+      revisionCoverage = Math.max(0, Math.min(100, Math.round((1 - pendingRatio) * 100)));
     }
 
     // 6. PYQ Preparedness (Weight: 10%)
-    let pyqPreparedness = 60;
+    let pyqPreparedness = 0;
     if (pyqAnalysis && pyqAnalysis.topicFrequencies.length > 0) {
       // Check mastery of top PYQ topics
       const highPriority = pyqAnalysis.highPriorityTopics;
@@ -100,6 +100,32 @@ export const ExamReadinessEngine = {
           pyqPreparedness = Math.round(matchedScores / matchedCount);
         }
       }
+    }
+
+    const hasAssessmentEvidence =
+      (activePlan && activePlan.tasks.length > 0) ||
+      masteryValues.length > 0 ||
+      quizHistory.length > 0 ||
+      spacedReviews.length > 0;
+
+    const isProvisional = !hasAssessmentEvidence;
+
+    if (isProvisional) {
+      return {
+        overallScore: 0,
+        status: 'At Risk',
+        syllabusCoverage: 0,
+        masteryAverage: 0,
+        recentQuizPerformance: 0,
+        revisionCoverage: 0,
+        pyqPreparedness: 0,
+        daysUntilExam,
+        limitingFactors: ['No assessment data recorded yet. Take a diagnostic quiz or create a study plan to generate your baseline readiness.'],
+        keyStrengths: [],
+        recommendedAction: 'Start by generating a study plan or taking a diagnostic quiz to establish your baseline readiness score.',
+        lastCalculatedAt: new Date().toISOString(),
+        isProvisional: true,
+      };
     }
 
     // Aggregate Weighted Score
@@ -185,6 +211,7 @@ export const ExamReadinessEngine = {
       keyStrengths,
       recommendedAction,
       lastCalculatedAt: new Date().toISOString(),
+      isProvisional: false,
     };
   },
 };

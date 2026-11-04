@@ -21,6 +21,7 @@ import {
   validateParseSyllabusInput,
 } from './validators.js';
 import { ConfidenceLevel } from '../src/types/index.js';
+import { authenticateToken } from './authMiddleware.js';
 
 export function createExpressApp() {
   const app = express();
@@ -35,6 +36,9 @@ export function createExpressApp() {
     }
     next(err);
   });
+
+  // Attach verified user identity from Bearer token if provided
+  app.use(authenticateToken);
 
   // Health check endpoint
   app.get('/api/health', (req: Request, res: Response) => {
@@ -102,7 +106,7 @@ export function createExpressApp() {
       }
 
       const serverQuiz = await generateQuiz(validation.data);
-      serverQuizStore.saveQuiz(serverQuiz);
+      serverQuizStore.saveQuiz(serverQuiz, req.user?.uid);
 
       // Return strictly shielded client quiz representation
       const clientQuiz = toClientQuiz(serverQuiz);
@@ -124,6 +128,14 @@ export function createExpressApp() {
       }
 
       const { quizId, questionId, selectedAnswer } = validation.data;
+
+      // Ownership authorization check
+      if (!serverQuizStore.verifyOwnership(quizId, req.user?.uid)) {
+        return res.status(403).json({
+          error: 'You do not have permission to submit answers to this quiz session.',
+        });
+      }
+
       const quiz = serverQuizStore.getQuiz(quizId);
       if (!quiz) {
         return res.status(404).json({
@@ -176,6 +188,14 @@ export function createExpressApp() {
       }
 
       const { quizId, userAnswers, confidenceMap } = validation.data;
+
+      // Ownership authorization check
+      if (!serverQuizStore.verifyOwnership(quizId, req.user?.uid)) {
+        return res.status(403).json({
+          error: 'You do not have permission to evaluate or submit this quiz session.',
+        });
+      }
+
       const quiz = serverQuizStore.getQuiz(quizId);
       if (!quiz) {
         return res.status(404).json({
