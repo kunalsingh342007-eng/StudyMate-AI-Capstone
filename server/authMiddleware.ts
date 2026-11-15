@@ -1,5 +1,7 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { Request, Response, NextFunction } from 'express';
-import appletConfig from '../firebase-applet-config.json' assert { type: 'json' };
 
 export interface AuthenticatedUser {
   uid: string;
@@ -14,7 +16,44 @@ declare global {
   }
 }
 
-const PROJECT_ID = appletConfig?.projectId || 'studymate-ai-c3f25';
+function resolveFirebaseProjectId(): string {
+  const envProjectId =
+    process.env.FIREBASE_PROJECT_ID ||
+    process.env.VITE_FIREBASE_PROJECT_ID ||
+    process.env.GOOGLE_CLOUD_PROJECT;
+  if (envProjectId && envProjectId.trim()) {
+    return envProjectId.trim();
+  }
+
+  const candidatePaths: string[] = [
+    path.resolve(process.cwd(), 'firebase-applet-config.json'),
+  ];
+
+  try {
+    const currentDir = path.dirname(fileURLToPath(import.meta.url));
+    candidatePaths.push(path.resolve(currentDir, '../firebase-applet-config.json'));
+  } catch {
+    // Ignore when bundled into CJS where import.meta.url may be empty
+  }
+
+  for (const configPath of candidatePaths) {
+    try {
+      if (fs.existsSync(configPath)) {
+        const raw = fs.readFileSync(configPath, 'utf8');
+        const parsed = JSON.parse(raw);
+        if (parsed?.projectId && typeof parsed.projectId === 'string') {
+          return parsed.projectId;
+        }
+      }
+    } catch {
+      // Continue to next fallback
+    }
+  }
+
+  return 'studymate-ai-c3f25';
+}
+
+const PROJECT_ID = resolveFirebaseProjectId();
 
 function decodeJwtPayload(token: string): any | null {
   try {

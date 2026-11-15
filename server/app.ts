@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import express, { Request, Response, NextFunction } from 'express';
 import {
   generateStudyPlan,
@@ -7,6 +8,8 @@ import {
   getAIStatus,
   explainMistake,
   parseSyllabus,
+  testGeminiConnectivity,
+  GeminiServiceError,
 } from './gemini.js';
 import { serverQuizStore, toClientQuiz } from './quizStore.js';
 import { aiEndpointsLimiter } from './rateLimiter.js';
@@ -23,8 +26,91 @@ import {
 import { ConfidenceLevel } from '../src/types/index.js';
 import { authenticateToken } from './authMiddleware.js';
 
+function getRequestId(req: Request): string {
+  const existing = (req as any).requestId;
+  if (typeof existing === 'string' && existing.length > 0) return existing;
+  const headerId = req.headers['x-request-id'];
+  const id = typeof headerId === 'string' && headerId.trim() ? headerId.trim().slice(0, 64) : crypto.randomUUID();
+  (req as any).requestId = id;
+  return id;
+}
+
+function logServerError(params: {
+  requestId: string;
+  route: string;
+  operation: string;
+  category: string;
+  statusCode: number;
+  context?: Record<string, string | number | boolean | undefined>;
+}) {
+  console.error(
+    JSON.stringify({
+      level: 'error',
+      service: 'studymate-api',
+      timestamp: new Date().toISOString(),
+      requestId: params.requestId,
+      route: params.route,
+      operation: params.operation,
+      errorCategory: params.category,
+      statusCode: params.statusCode,
+      ...(params.context ? { context: params.context } : {}),
+    })
+  );
+}
+
+function sendAIErrorResponse(
+  req: Request,
+  res: Response,
+  route: string,
+  operation: string,
+  error: any,
+  fallbackMessage: string
+) {
+  const requestId = getRequestId(req);
+
+  if (error instanceof GeminiServiceError) {
+    logServerError({
+      requestId,
+      route,
+      operation,
+      category: error.category,
+      statusCode: error.statusCode,
+      context: { code: error.code, retryable: error.retryable },
+    });
+    return res.status(error.statusCode).json({
+      error: error.userMessage,
+      code: error.code,
+      category: error.category,
+      retryable: error.retryable,
+      requestId,
+    });
+  }
+
+  logServerError({
+    requestId,
+    route,
+    operation,
+    category: 'internal_error',
+    statusCode: 500,
+    context: { errorName: error?.name || 'Error' },
+  });
+
+  return res.status(500).json({
+    error: fallbackMessage,
+    code: 'INTERNAL_SERVER_ERROR',
+    requestId,
+  });
+}
+
 export function createExpressApp() {
   const app = express();
+
+  // Attach request ID header for safe diagnostics tracing
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const requestId = getRequestId(req);
+    res.setHeader('X-Request-Id', requestId);
+    next();
+  });
 
   // Parse JSON payloads with reasonable size limits
   app.use(express.json({ limit: '2mb' }));
@@ -32,7 +118,11 @@ export function createExpressApp() {
   // Safe JSON parse error handler for malformed incoming payloads
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     if (err && (err.type === 'entity.parse.failed' || err.status === 400)) {
-      return res.status(400).json({ error: 'Malformed JSON payload received in request.' });
+      return res.status(400).json({
+        error: 'Malformed JSON payload received in request.',
+        code: 'INVALID_JSON',
+        requestId: getRequestId(req),
+      });
     }
     next(err);
   });
@@ -40,22 +130,58 @@ export function createExpressApp() {
   // Attach verified user identity from Bearer token if provided
   app.use(authenticateToken);
 
-  // Health check endpoint
+  // Health check endpoint (fast, zero external network calls)
   app.get('/api/health', (req: Request, res: Response) => {
+    const aiStatus = getAIStatus();
     res.json({
       status: 'healthy',
       app: 'StudyMate AI',
+      runtime: process.env.VERCEL ? 'vercel-serverless' : 'node-express',
+      nodeVersion: process.version,
       timestamp: new Date().toISOString(),
+      checks: {
+        backend: 'ok',
+        geminiConfigured: aiStatus.isConfigured,
+        model: aiStatus.model,
+      },
+      requestId: getRequestId(req),
     });
   });
 
-  // AI Service & Model status endpoint
-  app.get('/api/status', (req: Request, res: Response) => {
+  // AI Service & Model status endpoint (supports ?live=true for rate-limited connectivity verification)
+  app.get('/api/status', async (req: Request, res: Response) => {
     try {
       const status = getAIStatus();
-      res.json(status);
-    } catch {
-      res.status(500).json({ error: 'Failed to determine AI system status.' });
+      const wantsLiveCheck = req.query.live === 'true' || req.query.check === 'live';
+
+      if (!wantsLiveCheck) {
+        return res.json(status);
+      }
+
+      // Rate-limit explicit live connectivity checks to prevent API abuse
+      return aiEndpointsLimiter.middleware()(req, res, async () => {
+        const liveCheck = await testGeminiConnectivity();
+        return res.status(liveCheck.ok ? 200 : 503).json({
+          ...status,
+          status: liveCheck.ok ? 'ready' : 'error',
+          message: liveCheck.message,
+          liveCheck,
+          requestId: getRequestId(req),
+        });
+      });
+    } catch (err: any) {
+      logServerError({
+        requestId: getRequestId(req),
+        route: '/api/status',
+        operation: 'get_ai_status',
+        category: 'status_check_error',
+        statusCode: 500,
+        context: { errorName: err?.name || 'Error' },
+      });
+      res.status(500).json({
+        error: 'Failed to determine AI system status.',
+        requestId: getRequestId(req),
+      });
     }
   });
 
@@ -64,16 +190,23 @@ export function createExpressApp() {
     try {
       const validation = validateStudyPlanInput(req.body);
       if (!validation.success || !validation.data) {
-        return res.status(400).json({ error: validation.error || 'Invalid study plan request data.' });
+        return res.status(400).json({
+          error: validation.error || 'Invalid study plan request data.',
+          requestId: getRequestId(req),
+        });
       }
 
       const plan = await generateStudyPlan(validation.data);
       res.json(plan);
     } catch (error: any) {
-      console.error('[API /api/study-plan error]:', error?.message || error);
-      res.status(500).json({
-        error: 'We could not generate your study plan right now. Please try again.',
-      });
+      sendAIErrorResponse(
+        req,
+        res,
+        '/api/study-plan',
+        'generate_study_plan',
+        error,
+        'We could not generate your study plan right now. Please try again.'
+      );
     }
   });
 
@@ -82,40 +215,51 @@ export function createExpressApp() {
     try {
       const validation = validateExplainInput(req.body);
       if (!validation.success || !validation.data) {
-        return res.status(400).json({ error: validation.error || 'Invalid topic explanation request data.' });
+        return res.status(400).json({
+          error: validation.error || 'Invalid topic explanation request data.',
+          requestId: getRequestId(req),
+        });
       }
 
       const explanation = await generateExplanation(validation.data);
       res.json(explanation);
     } catch (error: any) {
-      console.error('[API /api/explain error]:', error?.message || error);
-      res.status(500).json({
-        error: 'We could not explain this topic right now. Please try again.',
-      });
+      sendAIErrorResponse(
+        req,
+        res,
+        '/api/explain',
+        'generate_explanation',
+        error,
+        'We could not explain this topic right now. Please try again.'
+      );
     }
   });
 
   // 3. AI Quiz Generation Endpoint (Rate-limited, validated, answer-shielded)
-  // CRITICAL: Returns ONLY ClientQuiz { id, question, options }.
-  // Correct answers and explanations are strictly kept server-side in serverQuizStore.
   app.post('/api/quiz', aiEndpointsLimiter.middleware(), async (req: Request, res: Response) => {
     try {
       const validation = validateQuizInput(req.body);
       if (!validation.success || !validation.data) {
-        return res.status(400).json({ error: validation.error || 'Invalid quiz generation request data.' });
+        return res.status(400).json({
+          error: validation.error || 'Invalid quiz generation request data.',
+          requestId: getRequestId(req),
+        });
       }
 
       const serverQuiz = await generateQuiz(validation.data);
       serverQuizStore.saveQuiz(serverQuiz, req.user?.uid);
 
-      // Return strictly shielded client quiz representation
-      const clientQuiz = toClientQuiz(serverQuiz);
+      const clientQuiz = toClientQuiz(serverQuiz, req.user?.uid);
       res.json(clientQuiz);
     } catch (error: any) {
-      console.error('[API /api/quiz error]:', error?.message || error);
-      res.status(500).json({
-        error: 'We could not generate your quiz right now. Please try again.',
-      });
+      sendAIErrorResponse(
+        req,
+        res,
+        '/api/quiz',
+        'generate_quiz',
+        error,
+        'We could not generate your quiz right now. Please try again.'
+      );
     }
   });
 
@@ -124,22 +268,27 @@ export function createExpressApp() {
     try {
       const validation = validateQuizAnswerInput(req.body);
       if (!validation.success || !validation.data) {
-        return res.status(400).json({ error: validation.error || 'Invalid answer payload.' });
-      }
-
-      const { quizId, questionId, selectedAnswer } = validation.data;
-
-      // Ownership authorization check
-      if (!serverQuizStore.verifyOwnership(quizId, req.user?.uid)) {
-        return res.status(403).json({
-          error: 'You do not have permission to submit answers to this quiz session.',
+        return res.status(400).json({
+          error: validation.error || 'Invalid answer payload.',
+          requestId: getRequestId(req),
         });
       }
 
-      const quiz = serverQuizStore.getQuiz(quizId);
+      const { quizId, questionId, selectedAnswer, sessionToken } = validation.data;
+
+      const resolved = serverQuizStore.resolveQuiz(quizId, req.user?.uid, sessionToken);
+      if (resolved.forbidden) {
+        return res.status(403).json({
+          error: 'You do not have permission to submit answers to this quiz session.',
+          requestId: getRequestId(req),
+        });
+      }
+
+      const quiz = resolved.quiz;
       if (!quiz) {
         return res.status(404).json({
           error: 'Quiz session not found or expired. Please generate a new quiz to continue.',
+          requestId: getRequestId(req),
         });
       }
 
@@ -147,10 +296,10 @@ export function createExpressApp() {
       if (!question) {
         return res.status(400).json({
           error: 'The requested question was not found in this quiz.',
+          requestId: getRequestId(req),
         });
       }
 
-      // Verify selected answer matches one of the question's actual options
       const matchedOption = question.options.find(
         (opt) => opt.toLowerCase() === selectedAnswer.toLowerCase()
       );
@@ -158,6 +307,7 @@ export function createExpressApp() {
       if (!matchedOption) {
         return res.status(400).json({
           error: 'Selected answer must be one of the available options for this question.',
+          requestId: getRequestId(req),
         });
       }
 
@@ -172,9 +322,17 @@ export function createExpressApp() {
         explanation: question.explanation,
       });
     } catch (error: any) {
-      console.error('[API /api/quiz/answer error]:', error?.message || error);
+      logServerError({
+        requestId: getRequestId(req),
+        route: '/api/quiz/answer',
+        operation: 'evaluate_quiz_answer',
+        category: 'internal_error',
+        statusCode: 500,
+        context: { errorName: error?.name || 'Error' },
+      });
       res.status(500).json({
         error: 'We could not evaluate this answer right now. Please try again.',
+        requestId: getRequestId(req),
       });
     }
   });
@@ -184,22 +342,27 @@ export function createExpressApp() {
     try {
       const validation = validateQuizSubmitInput(req.body);
       if (!validation.success || !validation.data) {
-        return res.status(400).json({ error: validation.error || 'Invalid quiz submission payload.' });
-      }
-
-      const { quizId, userAnswers, confidenceMap } = validation.data;
-
-      // Ownership authorization check
-      if (!serverQuizStore.verifyOwnership(quizId, req.user?.uid)) {
-        return res.status(403).json({
-          error: 'You do not have permission to evaluate or submit this quiz session.',
+        return res.status(400).json({
+          error: validation.error || 'Invalid quiz submission payload.',
+          requestId: getRequestId(req),
         });
       }
 
-      const quiz = serverQuizStore.getQuiz(quizId);
+      const { quizId, userAnswers, confidenceMap, sessionToken } = validation.data;
+
+      const resolved = serverQuizStore.resolveQuiz(quizId, req.user?.uid, sessionToken);
+      if (resolved.forbidden) {
+        return res.status(403).json({
+          error: 'You do not have permission to evaluate or submit this quiz session.',
+          requestId: getRequestId(req),
+        });
+      }
+
+      const quiz = resolved.quiz;
       if (!quiz) {
         return res.status(404).json({
           error: 'Quiz session not found or expired. Please generate a new quiz to continue.',
+          requestId: getRequestId(req),
         });
       }
 
@@ -226,7 +389,6 @@ export function createExpressApp() {
 
         const userConfidence: ConfidenceLevel = confidenceMap?.[q.id] || 'Medium';
 
-        // Calculate alignment
         let alignment: 'Misconception' | 'Lucky Guess' | 'Strong Mastery' | 'Foundational Gap' = 'Foundational Gap';
         if (userConfidence === 'High' && !isCorrect) {
           alignment = 'Misconception';
@@ -299,9 +461,17 @@ export function createExpressApp() {
         },
       });
     } catch (error: any) {
-      console.error('[API /api/quiz/submit error]:', error?.message || error);
+      logServerError({
+        requestId: getRequestId(req),
+        route: '/api/quiz/submit',
+        operation: 'submit_quiz',
+        category: 'internal_error',
+        statusCode: 500,
+        context: { errorName: error?.name || 'Error' },
+      });
       res.status(500).json({
         error: 'We could not score your quiz right now. Please try again.',
+        requestId: getRequestId(req),
       });
     }
   });
@@ -311,16 +481,23 @@ export function createExpressApp() {
     try {
       const validation = validateExplainMistakeInput(req.body);
       if (!validation.success || !validation.data) {
-        return res.status(400).json({ error: validation.error || 'Invalid mistake diagnosis request data.' });
+        return res.status(400).json({
+          error: validation.error || 'Invalid mistake diagnosis request data.',
+          requestId: getRequestId(req),
+        });
       }
 
       const explanation = await explainMistake(validation.data);
       res.json(explanation);
     } catch (error: any) {
-      console.error('[API /api/explain-mistake error]:', error?.message || error);
-      res.status(500).json({
-        error: 'We could not analyze this mistake right now. Please try again.',
-      });
+      sendAIErrorResponse(
+        req,
+        res,
+        '/api/explain-mistake',
+        'explain_mistake',
+        error,
+        'We could not analyze this mistake right now. Please try again.'
+      );
     }
   });
 
@@ -329,16 +506,23 @@ export function createExpressApp() {
     try {
       const validation = validateParseSyllabusInput(req.body);
       if (!validation.success || !validation.data) {
-        return res.status(400).json({ error: validation.error || 'Invalid syllabus parsing request data.' });
+        return res.status(400).json({
+          error: validation.error || 'Invalid syllabus parsing request data.',
+          requestId: getRequestId(req),
+        });
       }
 
       const parsed = await parseSyllabus(validation.data.rawText, validation.data.targetExamName);
       res.json(parsed);
     } catch (error: any) {
-      console.error('[API /api/parse-syllabus error]:', error?.message || error);
-      res.status(500).json({
-        error: 'We could not parse your syllabus right now. Please try again.',
-      });
+      sendAIErrorResponse(
+        req,
+        res,
+        '/api/parse-syllabus',
+        'parse_syllabus',
+        error,
+        'We could not parse your syllabus right now. Please try again.'
+      );
     }
   });
 
@@ -347,25 +531,42 @@ export function createExpressApp() {
     try {
       const validation = validateAdaptPlanInput(req.body);
       if (!validation.success || !validation.data) {
-        return res.status(400).json({ error: validation.error || 'Invalid adaptive plan request data.' });
+        return res.status(400).json({
+          error: validation.error || 'Invalid adaptive plan request data.',
+          requestId: getRequestId(req),
+        });
       }
 
       const adapted = await adaptPlan(validation.data);
       res.json(adapted);
     } catch (error: any) {
-      console.error('[API /api/adapt-plan error]:', error?.message || error);
-      res.status(500).json({
-        error: 'We could not adjust your plan right now. Please try again.',
-      });
+      sendAIErrorResponse(
+        req,
+        res,
+        '/api/adapt-plan',
+        'adapt_plan',
+        error,
+        'We could not adjust your plan right now. Please try again.'
+      );
     }
   });
 
   // Catch-all unhandled server error handler
-  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-    console.error('[Unhandled Express Error]:', err?.message || err);
+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
+    const requestId = getRequestId(req);
+    logServerError({
+      requestId,
+      route: req.path || '/api',
+      operation: 'unhandled_express_error',
+      category: 'unhandled_error',
+      statusCode: 500,
+      context: { errorName: err?.name || 'Error' },
+    });
     if (!res.headersSent) {
       res.status(500).json({
         error: 'An internal server error occurred. Please try again.',
+        code: 'INTERNAL_SERVER_ERROR',
+        requestId,
       });
     }
   });

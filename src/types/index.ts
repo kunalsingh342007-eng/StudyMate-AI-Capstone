@@ -121,6 +121,7 @@ export interface ClientQuiz {
   questions: ClientQuizQuestion[];
   createdAt: string;
   isDemoFallback?: boolean;
+  sessionToken?: string;
 }
 
 // Backwards-compatible alias for client components
@@ -132,6 +133,7 @@ export interface QuizAnswerRequest {
   quizId: string;
   questionId: string;
   selectedAnswer: string;
+  sessionToken?: string;
 }
 
 export interface QuizAnswerResponse {
@@ -161,6 +163,7 @@ export interface QuizSubmitRequest {
   quizId: string;
   userAnswers: { [questionId: string]: string };
   confidenceMap?: { [questionId: string]: ConfidenceLevel };
+  sessionToken?: string;
 }
 
 export interface QuizConfidenceInsights {

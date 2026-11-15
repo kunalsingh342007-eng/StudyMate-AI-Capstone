@@ -94,7 +94,7 @@ export const AdaptiveModal: React.FC<AdaptiveModalProps> = ({
                 Missed Session Recovery
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 mt-1">
-                Life happens! Tell Claude what happened and how much extra time you have. We'll redistribute{' '}
+                Life happens! Tell StudyMate AI what happened and how much extra time you have. We'll redistribute{' '}
                 <strong className="text-slate-900 font-semibold">{task.topic}</strong> without overloading you.
               </p>
             </div>
@@ -222,7 +222,7 @@ export const AdaptiveModal: React.FC<AdaptiveModalProps> = ({
             <div className="p-4 rounded-xl bg-indigo-50/60 border border-indigo-100 text-xs sm:text-sm space-y-2">
               <h3 className="font-semibold text-indigo-950 flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-indigo-600" />
-                How Claude Rebalanced Your Work:
+                How StudyMate AI Rebalanced Your Work:
               </h3>
               <p className="text-slate-700 leading-relaxed">{adaptedPreview.redistributionSummary}</p>
 

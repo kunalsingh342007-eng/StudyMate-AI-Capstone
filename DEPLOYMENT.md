@@ -52,17 +52,18 @@ gcloud run deploy studymate-ai \
 
 ## 4. Health Check & Diagnostics
 
-The production server includes a diagnostic health endpoint:
+The production server includes diagnostic health endpoints:
 ```
 GET /api/health
 GET /api/status
+GET /api/status?live=true
 ```
 **Response:**
 ```json
 {
   "status": "ready",
   "provider": "Google Gemini",
-  "model": "gemini-3.7-flash",
+  "model": "gemini-4-hydrogen",
   "isConfigured": true
 }
 ```

@@ -223,7 +223,7 @@ export function validateQuizAnswerInput(body: any): ValidationResult<QuizAnswerR
     return { success: false, error: 'Request body must be a valid JSON object.' };
   }
 
-  const { quizId, questionId, selectedAnswer } = body;
+  const { quizId, questionId, selectedAnswer, sessionToken } = body;
 
   if (typeof quizId !== 'string' || quizId.trim().length === 0) {
     return { success: false, error: 'Quiz ID is required and must be a valid string.' };
@@ -243,6 +243,7 @@ export function validateQuizAnswerInput(body: any): ValidationResult<QuizAnswerR
       quizId: quizId.trim(),
       questionId: questionId.trim(),
       selectedAnswer: selectedAnswer.trim(),
+      sessionToken: typeof sessionToken === 'string' && sessionToken.trim().length > 0 ? sessionToken.trim() : undefined,
     },
   };
 }
@@ -252,7 +253,7 @@ export function validateQuizSubmitInput(body: any): ValidationResult<QuizSubmitR
     return { success: false, error: 'Request body must be a valid JSON object.' };
   }
 
-  const { quizId, userAnswers, confidenceMap } = body;
+  const { quizId, userAnswers, confidenceMap, sessionToken } = body;
 
   if (typeof quizId !== 'string' || quizId.trim().length === 0) {
     return { success: false, error: 'Quiz ID is required and must be a valid string.' };
@@ -287,6 +288,7 @@ export function validateQuizSubmitInput(body: any): ValidationResult<QuizSubmitR
       quizId: quizId.trim(),
       userAnswers: sanitizedAnswers,
       confidenceMap: sanitizedConfidence,
+      sessionToken: typeof sessionToken === 'string' && sessionToken.trim().length > 0 ? sessionToken.trim() : undefined,
     },
   };
 }
