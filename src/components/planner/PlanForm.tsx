@@ -1,20 +1,23 @@
 import React, { useState } from 'react';
-import { Sparkles, Calendar, Clock, BookOpen, AlertCircle, Plus, X, Layers } from 'lucide-react';
+import { Sparkles, BookOpen, AlertCircle, Wrench } from 'lucide-react';
 import { StudyPlanRequest, StudyLevel } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 
 interface PlanFormProps {
   onSubmit: (request: StudyPlanRequest) => Promise<void>;
   isLoading: boolean;
+  onManualMode?: () => void;
 }
 
-export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading }) => {
+export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading, onManualMode }) => {
   const { preferences, userProfile } = useAuth();
-  const defaultExamDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-  const defaultHours = preferences.dailyStudyGoalMinutes
-    ? Math.round((preferences.dailyStudyGoalMinutes / 60) * 10) / 10
-    : userProfile.dailyGoalHours || 2.5;
+  const defaultHours =
+    userProfile.dailyGoalHours && userProfile.dailyGoalHours > 0
+      ? userProfile.dailyGoalHours
+      : preferences.dailyStudyGoalMinutes
+      ? Math.round((preferences.dailyStudyGoalMinutes / 60) * 10) / 10
+      : 2;
 
   const dayCodeToFull: Record<string, string> = {
     Mon: 'Monday',
@@ -26,19 +29,32 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading }) => {
     Sun: 'Sunday',
   };
 
-  const initialDays = preferences.preferredStudyDays
-    ? preferences.preferredStudyDays
-        .split(',')
-        .map((d) => dayCodeToFull[d.trim()] || d.trim())
-        .filter(Boolean)
-    : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const initialDays =
+    userProfile.preferredStudyDays && userProfile.preferredStudyDays.length > 0
+      ? userProfile.preferredStudyDays
+      : preferences.preferredStudyDays
+      ? preferences.preferredStudyDays
+          .split(',')
+          .map((d) => dayCodeToFull[d.trim()] || d.trim())
+          .filter(Boolean)
+      : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
-  const [subject, setSubject] = useState('Operating Systems & Computer Architecture');
-  const [topicsInput, setTopicsInput] = useState('Process Synchronization, Virtual Memory, CPU Scheduling, File Systems, Deadlocks, Cache Coherence');
-  const [examDate, setExamDate] = useState(defaultExamDate);
+  const [subject, setSubject] = useState(
+    userProfile.subjects && userProfile.subjects.length > 0
+      ? userProfile.subjects.join(', ')
+      : userProfile.targetExam || ''
+  );
+  const [topicsInput, setTopicsInput] = useState('');
+  const [examDate, setExamDate] = useState(
+    userProfile.targetExamDate || ''
+  );
   const [dailyHours, setDailyHours] = useState<number>(defaultHours);
   const [level, setLevel] = useState<StudyLevel>('Intermediate');
-  const [weakTopicsInput, setWeakTopicsInput] = useState('Virtual Memory, Deadlocks');
+  const [weakTopicsInput, setWeakTopicsInput] = useState(
+    (userProfile.weakTopics || []).join(', ')
+  );
+  const [learningGoal, setLearningGoal] = useState(userProfile.learningGoal || '');
+  const [timetable, setTimetable] = useState(userProfile.timetable || '');
   const [selectedDays, setSelectedDays] = useState<string[]>(initialDays);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -59,7 +75,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading }) => {
     setFormError(null);
 
     if (!subject.trim()) {
-      setFormError('Please enter a subject name.');
+      setFormError('Please enter a subject or skill to study.');
       return;
     }
 
@@ -69,7 +85,12 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading }) => {
       .filter(Boolean);
 
     if (parsedTopics.length === 0) {
-      setFormError('Please enter at least one topic to study.');
+      setFormError('Please enter at least one topic or module to schedule.');
+      return;
+    }
+
+    if (!examDate) {
+      setFormError('Please choose your target exam date or deadline so sessions fit your timeline.');
       return;
     }
 
@@ -92,36 +113,58 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading }) => {
         level,
         weakTopics: parsedWeakTopics,
         preferredDays: selectedDays,
+        learningGoal: learningGoal.trim() || undefined,
+        timetable: timetable.trim() || undefined,
       });
     } catch (err: any) {
       setFormError(err.message || 'Failed to generate study plan.');
     }
   };
 
+  const inputClass =
+    'w-full text-sm px-3.5 py-2.5 rounded-xl border border-[#E5E1D6] dark:border-[#1E2F47] bg-[#F7F5EF] dark:bg-[#16263D] text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-600/30 focus:border-teal-600 dark:focus:border-teal-400 transition-colors';
+
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-3xl border border-purple-100 p-6 sm:p-8 shadow-xs space-y-6">
-      <div className="border-b border-purple-100 pb-4">
-        <h2 className="text-lg sm:text-xl font-bold text-[#1E1B4B] flex items-center gap-2">
-          <BookOpen className="w-5 h-5 text-purple-600" />
-          Create New AI Study Schedule
-        </h2>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1">
-          StudyMate AI analyzes your syllabus, balances spaced retrieval intervals, and allocates study blocks strictly around your available capacity.
-        </p>
+    <form
+      onSubmit={handleSubmit}
+      className="bg-white dark:bg-[#0F1D32] rounded-2xl border border-[#E5E1D6] dark:border-[#1E2F47] p-6 sm:p-8 shadow-2xs space-y-6"
+    >
+      <div className="border-b border-[#E5E1D6] dark:border-[#1E2F47] pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-teal-700 dark:text-teal-400" aria-hidden="true" />
+            <span>Create Study Schedule</span>
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
+            Generate a personalized study schedule from your own subjects, target deadline, and daily study capacity—and review before saving.
+          </p>
+        </div>
+
+        {onManualMode && (
+          <button
+            type="button"
+            onClick={onManualMode}
+            className="px-3.5 py-2 text-xs font-semibold rounded-xl border border-[#E5E1D6] dark:border-[#1E2F47] bg-[#F7F5EF] dark:bg-[#16263D] hover:bg-[#EFECE3] dark:hover:bg-[#1E2F47] text-slate-800 dark:text-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+          >
+            <Wrench className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400" />
+            <span>Build Schedule Manually</span>
+          </button>
+        )}
       </div>
 
       {formError && (
-        <div role="alert" className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-xs sm:text-sm text-rose-700 flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 text-rose-600 mt-0.5 shrink-0" />
+        <div
+          role="alert"
+          className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs sm:text-sm text-rose-700 dark:text-rose-200 flex items-start gap-2"
+        >
+          <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 mt-0.5 shrink-0" />
           <span>{formError}</span>
         </div>
       )}
 
-      {/* Grid Inputs */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {/* Subject */}
         <div className="space-y-1.5 md:col-span-2">
-          <label htmlFor="planner-subject" className="block text-xs font-semibold text-slate-900">
+          <label htmlFor="planner-subject" className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
             Subject or Course Name <span className="text-rose-500">*</span>
           </label>
           <input
@@ -130,15 +173,14 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading }) => {
             required
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
-            placeholder="e.g. Data Structures & Algorithms, Operating Systems, Computer Networks"
-            className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600 focus:border-purple-600"
+            placeholder="e.g. Organic Chemistry, Linear Algebra, World History, Python"
+            className={inputClass}
           />
         </div>
 
-        {/* Topics */}
         <div className="space-y-1.5 md:col-span-2">
-          <label htmlFor="planner-topics" className="block text-xs font-semibold text-slate-900">
-            Syllabus Topics (comma-separated) <span className="text-rose-500">*</span>
+          <label htmlFor="planner-topics" className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+            Syllabus Topics or Units (comma-separated) <span className="text-rose-500">*</span>
           </label>
           <textarea
             id="planner-topics"
@@ -146,34 +188,33 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading }) => {
             rows={2}
             value={topicsInput}
             onChange={(e) => setTopicsInput(e.target.value)}
-            placeholder="e.g. Sorting, Binary Search Trees, Graphs, Dynamic Programming"
-            className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600 focus:border-purple-600"
+            placeholder="e.g. Chapter 1 Foundations, Thermodynamics, Reaction Kinetics, Spectroscopy"
+            className={inputClass}
           />
-          <span className="text-[11px] text-slate-500 block">
-            List individual modules or chapter titles. StudyMate AI breaks each into actionable subtopics.
+          <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
+            List the chapters, skills, or exam modules you want to cover.
           </span>
         </div>
 
-        {/* Exam Date */}
         <div className="space-y-1.5">
-          <label htmlFor="planner-exam-date" className="block text-xs font-semibold text-slate-900">
-            Target Exam Date <span className="text-rose-500">*</span>
+          <label htmlFor="planner-exam-date" className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+            Target Exam or Goal Date <span className="text-rose-500">*</span>
           </label>
-          <div className="relative">
-            <input
-              id="planner-exam-date"
-              type="date"
-              required
-              value={examDate}
-              onChange={(e) => setExamDate(e.target.value)}
-              className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600 focus:border-purple-600"
-            />
-          </div>
+          <input
+            id="planner-exam-date"
+            type="date"
+            required
+            value={examDate}
+            onChange={(e) => setExamDate(e.target.value)}
+            className={`${inputClass} tabular-nums`}
+          />
+          <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
+            Used to pace sessions and spaced revision before your deadline.
+          </span>
         </div>
 
-        {/* Daily Available Hours */}
         <div className="space-y-1.5">
-          <label htmlFor="planner-daily-hours" className="block text-xs font-semibold text-slate-900">
+          <label htmlFor="planner-daily-hours" className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
             Daily Available Study Hours <span className="text-rose-500">*</span>
           </label>
           <div className="flex items-center gap-3">
@@ -186,49 +227,79 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading }) => {
               required
               value={dailyHours}
               onChange={(e) => setDailyHours(parseFloat(e.target.value) || 1)}
-              className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600 focus:border-purple-600"
+              className={`${inputClass} tabular-nums`}
             />
-            <span className="text-xs text-slate-500 font-medium whitespace-nowrap">hours / day</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
+              hours / day
+            </span>
           </div>
+          <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
+            Keeps each day realistic so you avoid overload.
+          </span>
         </div>
 
-        {/* Level */}
         <div className="space-y-1.5">
-          <label htmlFor="planner-level" className="block text-xs font-semibold text-slate-900">
+          <label htmlFor="planner-level" className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
             Current Knowledge Level
           </label>
           <select
             id="planner-level"
             value={level}
             onChange={(e) => setLevel(e.target.value as StudyLevel)}
-            className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600 focus:border-purple-600"
+            className={inputClass}
           >
             <option value="Beginner">Beginner (Starting from scratch / fundamentals)</option>
             <option value="Intermediate">Intermediate (Familiar with core concepts)</option>
-            <option value="Advanced">Advanced (Revision & exam-level problem solving)</option>
+            <option value="Advanced">Advanced (Revision &amp; exam-level problem solving)</option>
           </select>
         </div>
 
-        {/* Weak Topics */}
         <div className="space-y-1.5">
-          <label htmlFor="planner-weak-topics" className="block text-xs font-semibold text-slate-900">
-            Weak Topics (prioritized for extra revision)
+          <label htmlFor="planner-weak-topics" className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+            Weak Topics (optional, prioritized for extra revision)
           </label>
           <input
             id="planner-weak-topics"
             type="text"
             value={weakTopicsInput}
             onChange={(e) => setWeakTopicsInput(e.target.value)}
-            placeholder="e.g. Dynamic Programming, Red-Black Trees"
-            className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600 focus:border-purple-600"
+            placeholder="e.g. Stereochemistry, Hypothesis Testing"
+            className={inputClass}
           />
         </div>
 
-        {/* Preferred Study Days */}
-        <div className="space-y-2 md:col-span-2">
-          <label className="block text-xs font-semibold text-slate-900">
-            Preferred Study Days
+        <div className="space-y-1.5 md:col-span-2">
+          <label htmlFor="planner-learning-goal" className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+            Learning Goal (optional)
           </label>
+          <input
+            id="planner-learning-goal"
+            type="text"
+            value={learningGoal}
+            onChange={(e) => setLearningGoal(e.target.value)}
+            placeholder="e.g. Score 85%+ on midterms or finish fundamentals in 4 weeks"
+            className={inputClass}
+          />
+        </div>
+
+        <div className="space-y-1.5 md:col-span-2">
+          <label htmlFor="planner-timetable" className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+            Existing College / Work Timetable (optional)
+          </label>
+          <textarea
+            id="planner-timetable"
+            rows={2}
+            value={timetable}
+            onChange={(e) => setTimetable(e.target.value)}
+            placeholder="e.g. Classes Mon-Fri 9am-3pm; free evenings after 6pm and Saturday mornings"
+            className={inputClass}
+          />
+        </div>
+
+        <div className="space-y-2 md:col-span-2">
+          <span className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+            Preferred Study Days
+          </span>
           <div className="flex flex-wrap gap-2">
             {daysOfWeek.map((day) => {
               const isSelected = selectedDays.includes(day);
@@ -237,10 +308,10 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading }) => {
                   key={day}
                   type="button"
                   onClick={() => toggleDay(day)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-xl border transition-colors cursor-pointer ${
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors cursor-pointer whitespace-nowrap ${
                     isSelected
-                      ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
-                      : 'bg-white text-slate-600 border-purple-200 hover:border-purple-300'
+                      ? 'bg-teal-700 text-white border-teal-700 dark:bg-teal-600 dark:border-teal-600'
+                      : 'bg-[#F7F5EF] dark:bg-[#16263D] text-slate-600 dark:text-slate-300 border-[#E5E1D6] dark:border-[#1E2F47] hover:border-teal-500/50'
                   }`}
                   aria-pressed={isSelected}
                 >
@@ -252,26 +323,25 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading }) => {
         </div>
       </div>
 
-      {/* Submit Button */}
-      <div className="pt-3 border-t border-purple-100 flex items-center justify-between">
-        <span className="text-xs text-slate-500 hidden sm:block">
-          Evidence-informed schedule with spaced repetition built-in
+      <div className="pt-4 border-t border-[#E5E1D6] dark:border-[#1E2F47] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <span className="text-xs text-slate-500 dark:text-slate-400">
+          You will review and edit the generated schedule before anything is saved.
         </span>
         <button
           id="generate-plan-submit-btn"
           type="submit"
           disabled={isLoading}
-          className="w-full sm:w-auto px-6 py-2.5 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 active:scale-[0.98] rounded-xl shadow-md shadow-purple-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+          className="w-full sm:w-auto px-6 py-2.5 text-sm font-semibold text-white bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer whitespace-nowrap"
         >
           {isLoading ? (
             <>
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Generating Schedule...
+              <span>Generating Draft...</span>
             </>
           ) : (
             <>
               <Sparkles className="w-4 h-4" />
-              Generate Study Plan
+              <span>Generate Draft Schedule</span>
             </>
           )}
         </button>
@@ -279,3 +349,4 @@ export const PlanForm: React.FC<PlanFormProps> = ({ onSubmit, isLoading }) => {
     </form>
   );
 };
+

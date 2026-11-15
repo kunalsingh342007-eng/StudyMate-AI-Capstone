@@ -36,6 +36,9 @@ export interface StudyPlan {
   totalDays: number;
   totalStudyHours: number;
   assumptions: string[];
+  learningGoal?: string;
+  timetable?: string;
+  isManual?: boolean;
   isDemoFallback?: boolean;
 }
 
@@ -47,6 +50,8 @@ export interface StudyPlanRequest {
   level: StudyLevel;
   weakTopics: string[];
   preferredDays: string[];
+  learningGoal?: string;
+  timetable?: string;
 }
 
 export interface TopicExplanation {
@@ -422,20 +427,140 @@ export interface StudyNote {
   updatedAt: string;
 }
 
+export interface AcademicBoardRecord {
+  board: string;
+  school: string;
+  stream?: string;
+  passingYear?: number;
+  marksObtained?: number;
+  maximumMarks?: number;
+  percentage?: number;
+  percentageSource?: 'calculated' | 'manual';
+  updatedAt?: string;
+}
+
+export interface SemesterResultRecord {
+  id: string;
+  semester: string;
+  sgpa?: number;
+  cgpa?: number;
+  earnedCredits?: number;
+  resultYear?: number;
+  notes?: string;
+  updatedAt?: string;
+}
+
+export type StudentGoalStatus = 'Not Started' | 'In Progress' | 'Completed' | 'Paused';
+
+export interface StudentGoal {
+  id: string;
+  title: string;
+  category: 'Academic' | 'Exam Prep' | 'Skill' | 'Project' | 'Career' | 'Personal' | string;
+  description?: string;
+  targetDate?: string;
+  status: StudentGoalStatus;
+  completedAt?: string;
+  notes?: string;
+  completedSteps?: number;
+  totalSteps?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type SkillProficiency = 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert';
+
+export interface StudentSkill {
+  id: string;
+  name: string;
+  category: 'Technical' | 'Non-Technical';
+  proficiency?: SkillProficiency;
+}
+
+export interface StudentProject {
+  id: string;
+  title: string;
+  description: string;
+  technologies: string[];
+  projectUrl?: string;
+  status: 'Planned' | 'In Progress' | 'Completed';
+}
+
+export interface StudentCertification {
+  id: string;
+  name: string;
+  issuingOrganization: string;
+  issueDate?: string;
+  credentialUrl?: string;
+}
+
+export interface StudentExperience {
+  id: string;
+  role: string;
+  organization: string;
+  type: 'Internship' | 'Research' | 'Work' | 'Leadership';
+  startDate?: string;
+  endDate?: string;
+  currentlyActive?: boolean;
+  description?: string;
+}
+
+export interface StudentSocialLinks {
+  github?: string;
+  linkedin?: string;
+  portfolio?: string;
+}
+
+export interface UpcomingExamItem {
+  id: string;
+  name: string;
+  date: string;
+  subject?: string;
+}
+
 export interface UserProfile {
   id: string;
   name: string;
+  preferredName?: string;
   email: string;
   avatarUrl?: string;
+  avatarRemoved?: boolean;
+  city?: string;
+  state?: string;
+  country?: string;
   academicLevel: string;
   institution?: string;
+  degree?: string;
+  branch?: string;
+  currentYear?: string;
+  currentSemester?: string;
+  admissionYear?: number;
+  expectedGraduationYear?: number;
+  careerInterest?: string;
   targetExam: string;
   targetExamDate: string;
+  upcomingExams?: UpcomingExamItem[];
   bio?: string;
   dailyGoalHours: number;
   streakDays: number;
   totalStudyMinutes: number;
   quizzesCompleted: number;
+  onboardingCompleted?: boolean;
+  onboardingStep?: number;
+  subjects?: string[];
+  learningGoal?: string;
+  weakTopics?: string[];
+  timetable?: string;
+  preferredStudyDays?: string[];
+  preferredStudyTime?: string;
+  secondaryEducation?: AcademicBoardRecord;
+  higherSecondaryEducation?: AcademicBoardRecord;
+  semesterResults?: SemesterResultRecord[];
+  goals?: StudentGoal[];
+  skills?: StudentSkill[];
+  projects?: StudentProject[];
+  certifications?: StudentCertification[];
+  experiences?: StudentExperience[];
+  socialLinks?: StudentSocialLinks;
 }
 
 export interface StudyProgress {

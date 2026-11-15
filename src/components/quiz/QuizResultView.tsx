@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import {
   Trophy,
@@ -9,16 +10,14 @@ import {
   ArrowRight,
   HelpCircle,
   Award,
-  AlertTriangle,
-  Lightbulb,
   BookOpen,
-  ChevronDown,
   ChevronUp,
 } from 'lucide-react';
 import { Quiz, QuizResult, MistakeExplanation } from '../../types';
-import { Badge } from '../ui/Common';
+import { StatusIndicator } from '../ui/Common';
 import { ApiClient } from '../../services/api/apiClient';
 import { StorageService } from '../../services/storage/storageService';
+import { useAuth } from '../../context/AuthContext';
 
 interface QuizResultViewProps {
   quiz: Quiz;
@@ -33,28 +32,33 @@ export const QuizResultView: React.FC<QuizResultViewProps> = ({
   onRetake,
   onNewQuiz,
 }) => {
+  const { preferences } = useAuth();
   const [diagnosingQuestionId, setDiagnosingQuestionId] = useState<string | null>(null);
   const [mistakeExplanations, setMistakeExplanations] = useState<{ [qId: string]: MistakeExplanation }>({});
   const [revealedPracticeAnswers, setRevealedPracticeAnswers] = useState<{ [qId: string]: boolean }>({});
   const [diagnosisError, setDiagnosisError] = useState<{ [qId: string]: string }>({});
 
   useEffect(() => {
-    if (result.percentage >= 80) {
+    const prefersReducedMotion =
+      preferences.reducedMotion ||
+      (typeof window !== 'undefined' &&
+        window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+
+    if (result.percentage >= 80 && !prefersReducedMotion) {
       try {
         confetti({
-          particleCount: 80,
-          spread: 70,
+          particleCount: 60,
+          spread: 65,
           origin: { y: 0.6 },
         });
-      } catch (e) {
+      } catch {
         // ignore confetti errors in test environments
       }
     }
-  }, [result.percentage]);
+  }, [result.percentage, preferences.reducedMotion]);
 
   const handleDiagnoseMistake = async (q: any) => {
     if (mistakeExplanations[q.id]) {
-      // Toggle off if already open
       const copy = { ...mistakeExplanations };
       delete copy[q.id];
       setMistakeExplanations(copy);
@@ -79,9 +83,10 @@ export const QuizResultView: React.FC<QuizResultViewProps> = ({
         [q.id]: explanation,
       }));
 
-      // Cache into storage if mistake exists
       const existingMistakes = StorageService.getMistakes();
-      const match = existingMistakes.find((m) => m.questionId === q.id || m.questionText === q.question);
+      const match = existingMistakes.find(
+        (m) => m.questionId === q.id || m.questionText === q.question
+      );
       if (match) {
         StorageService.updateMistakeExplanation(match.id, explanation);
       }
@@ -99,101 +104,116 @@ export const QuizResultView: React.FC<QuizResultViewProps> = ({
   const confidenceInsights = result.confidenceInsights;
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto animate-in fade-in duration-200">
+    <div className="space-y-6 max-w-3xl mx-auto">
       {/* Score Summary Card */}
-      <div className="bg-white rounded-3xl border border-purple-100 p-6 sm:p-8 shadow-xs text-center space-y-4">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-purple-50 text-purple-600 border border-purple-100 shadow-xs">
+      <div className="bg-white dark:bg-[#0F1D32] rounded-2xl border border-[#E5E1D6] dark:border-[#1E2F47] p-6 sm:p-8 text-center space-y-5">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#F7F5EF] dark:bg-[#16263D] border border-[#E5E1D6] dark:border-[#1E2F47]">
           {result.percentage >= 80 ? (
-            <Trophy className="w-8 h-8 text-amber-500" />
+            <Trophy className="w-7 h-7 text-amber-500" />
           ) : isPassing ? (
-            <Award className="w-8 h-8 text-purple-600" />
+            <Award className="w-7 h-7 text-teal-600 dark:text-teal-400" />
           ) : (
-            <HelpCircle className="w-8 h-8 text-slate-500" />
+            <HelpCircle className="w-7 h-7 text-slate-500 dark:text-slate-400" />
           )}
         </div>
 
         <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1E1B4B]">Quiz Completed!</h2>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            {quiz.subject} &bull; {quiz.topic} ({quiz.difficulty} Level)
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">
+            Assessment Complete
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+            {quiz.subject} &middot; {quiz.topic} ({quiz.difficulty})
           </p>
         </div>
 
         {/* Big Score Box */}
-        <div className="inline-flex flex-col items-center justify-center p-4 sm:p-6 rounded-3xl bg-[#F8F7FC] border border-purple-100 min-w-[200px]">
-          <div className="text-4xl sm:text-5xl font-black text-[#1E1B4B] tracking-tight">
+        <div className="inline-flex flex-col items-center justify-center px-8 py-5 rounded-2xl bg-[#F7F5EF] dark:bg-[#16263D] border border-[#E5E1D6] dark:border-[#1E2F47]">
+          <div className="text-4xl sm:text-5xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight tabular-nums">
             {result.percentage}%
           </div>
-          <span className="text-xs sm:text-sm font-semibold text-slate-600 mt-1">
-            {result.score} of {result.totalQuestions} Questions Correct
+          <span className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 mt-1 tabular-nums">
+            {result.score} of {result.totalQuestions} correct
           </span>
         </div>
 
         {/* Confidence Calibration Bar */}
         {confidenceInsights && (
-          <div className="p-4 rounded-2xl bg-[#F8F7FC] border border-purple-100 text-left space-y-2">
-            <div className="flex items-center justify-between text-xs font-semibold text-slate-800">
-              <span className="flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                Metacognitive Calibration
+          <div className="p-4 rounded-xl bg-[#F7F5EF] dark:bg-[#16263D] border border-[#E5E1D6] dark:border-[#1E2F47] text-left space-y-2.5">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-800 dark:text-slate-200">
+              <span>Metacognitive Calibration</span>
+              <span className="text-slate-500 dark:text-slate-400 font-normal">
+                {confidenceInsights.overallAlignment}
               </span>
-              <span className="text-slate-500 font-normal">{confidenceInsights.overallAlignment}</span>
             </div>
-            <div className="grid grid-cols-3 gap-2 text-center text-xs">
-              <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200/80">
-                <span className="block font-bold text-emerald-800 text-sm">
+            <div className="grid grid-cols-3 gap-2 text-center text-xs tabular-nums">
+              <div className="p-2.5 rounded-lg bg-white dark:bg-[#0F1D32] border border-[#E5E1D6] dark:border-[#1E2F47]">
+                <span className="block font-bold text-teal-700 dark:text-teal-300 text-sm">
                   {confidenceInsights.strongMasteryCount}
                 </span>
-                <span className="text-[11px] text-emerald-700 font-medium">Strong Mastery</span>
+                <span className="text-[11px] text-slate-600 dark:text-slate-400">Strong Mastery</span>
               </div>
-              <div className="p-2 rounded-xl bg-rose-50 border border-rose-200/80">
-                <span className="block font-bold text-rose-800 text-sm">
+              <div className="p-2.5 rounded-lg bg-white dark:bg-[#0F1D32] border border-[#E5E1D6] dark:border-[#1E2F47]">
+                <span className="block font-bold text-rose-600 dark:text-rose-400 text-sm">
                   {confidenceInsights.misconceptionsCount}
                 </span>
-                <span className="text-[11px] text-rose-700 font-medium">Misconceptions</span>
+                <span className="text-[11px] text-slate-600 dark:text-slate-400">Misconceptions</span>
               </div>
-              <div className="p-2 rounded-xl bg-amber-50 border border-amber-200/80">
-                <span className="block font-bold text-amber-800 text-sm">
+              <div className="p-2.5 rounded-lg bg-white dark:bg-[#0F1D32] border border-[#E5E1D6] dark:border-[#1E2F47]">
+                <span className="block font-bold text-amber-600 dark:text-amber-400 text-sm">
                   {confidenceInsights.unconfidentCount}
                 </span>
-                <span className="text-[11px] text-amber-700 font-medium">Uncertain / Low Conf</span>
+                <span className="text-[11px] text-slate-600 dark:text-slate-400">Low Confidence</span>
               </div>
             </div>
           </div>
         )}
 
         {/* Improvement Recommendation */}
-        <div className="text-left p-4 rounded-2xl bg-purple-50/70 border border-purple-100 text-xs sm:text-sm text-slate-800 space-y-1">
-          <span className="font-semibold text-purple-950 flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-purple-600" />
-            Personalized Study Recommendation:
+        <div className="text-left p-4 rounded-xl bg-teal-50/70 dark:bg-teal-950/30 border border-teal-200/80 dark:border-teal-800/50 text-xs sm:text-sm text-slate-800 dark:text-slate-200 space-y-1">
+          <span className="font-semibold text-teal-900 dark:text-teal-300 flex items-center gap-1.5">
+            <Sparkles className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+            <span>Recommended Next Step</span>
           </span>
-          <p className="text-slate-700 leading-relaxed pl-5.5">{result.improvementRecommendation}</p>
+          <p className="text-slate-700 dark:text-slate-300 leading-relaxed pl-5.5">
+            {result.improvementRecommendation}
+          </p>
         </div>
 
         {/* Action Buttons */}
-        <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
+        <div className="pt-2 flex flex-wrap items-center justify-center gap-2.5">
           <button
             type="button"
             onClick={onRetake}
-            className="px-5 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 bg-white border border-purple-200 hover:bg-purple-50 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
+            className="px-4 py-2 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 bg-[#F7F5EF] dark:bg-[#16263D] border border-[#E5E1D6] dark:border-[#1E2F47] hover:bg-[#EFECE3] dark:hover:bg-[#1E2F47] rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
           >
-            <RotateCcw className="w-4 h-4" /> Retake This Quiz
+            <RotateCcw className="w-4 h-4" />
+            <span>Retake Quiz</span>
           </button>
+
+          <Link
+            to={`/explain?topic=${encodeURIComponent(quiz.topic)}`}
+            className="px-4 py-2 text-xs sm:text-sm font-semibold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/60 hover:bg-teal-100 dark:hover:bg-teal-950/60 rounded-xl flex items-center gap-2 transition-colors"
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>Review in AI Explainer</span>
+          </Link>
 
           <button
             type="button"
             onClick={onNewQuiz}
-            className="px-6 py-2.5 text-xs sm:text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 active:scale-[0.98] rounded-xl shadow-md shadow-purple-600/30 flex items-center gap-2 transition-all cursor-pointer"
+            className="px-5 py-2 text-xs sm:text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
           >
-            Generate New Quiz <ArrowRight className="w-4 h-4" />
+            <span>New Quiz</span>
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>
 
       {/* Detailed Question Review */}
       <div className="space-y-4">
-        <h3 className="text-lg font-bold text-slate-900">Detailed Answer Breakdown</h3>
+        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+          Detailed Answer Breakdown
+        </h3>
 
         {((result.reviewQuestions && result.reviewQuestions.length > 0)
           ? result.reviewQuestions
@@ -215,68 +235,46 @@ export const QuizResultView: React.FC<QuizResultViewProps> = ({
           return (
             <div
               key={q.id}
-              className={`rounded-2xl border p-5 sm:p-6 transition-all ${
-                isCorrect ? 'bg-white border-emerald-200/80 shadow-xs' : 'bg-white border-rose-200/80 shadow-xs'
-              }`}
+              className="rounded-2xl bg-white dark:bg-[#0F1D32] border border-[#E5E1D6] dark:border-[#1E2F47] p-5 sm:p-6 space-y-3"
             >
-              {/* Question Header */}
-              <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-2.5 flex-1">
                   <span
-                    className={`w-6 h-6 rounded-lg text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                      isCorrect ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                    className={`w-6 h-6 rounded-md text-xs font-mono font-bold flex items-center justify-center shrink-0 mt-0.5 tabular-nums ${
+                      isCorrect
+                        ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300'
+                        : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300'
                     }`}
                   >
                     {idx + 1}
                   </span>
                   <div>
-                    <h4 className="text-sm sm:text-base font-semibold text-slate-900 leading-snug">
+                    <h4 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-slate-100 leading-snug">
                       {q.question}
                     </h4>
-
-                    {/* Metacognitive Alignment Badge */}
                     {q.alignment && (
-                      <div className="mt-1 flex items-center gap-1.5">
-                        {q.alignment === 'Misconception' && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-800 border border-rose-200">
-                            <AlertTriangle className="w-3 h-3 text-rose-600" />
-                            Misconception: High Confidence + Wrong
-                          </span>
-                        )}
-                        {q.alignment === 'Strong Mastery' && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                            Strong Mastery: High Confidence + Correct
-                          </span>
-                        )}
-                        {q.alignment === 'Lucky Guess' && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-sky-100 text-sky-800 border border-sky-200">
-                            <Lightbulb className="w-3 h-3 text-sky-600" />
-                            Knowledge Present: Low Confidence + Correct
-                          </span>
-                        )}
-                        {q.alignment === 'Foundational Gap' && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                            <HelpCircle className="w-3 h-3 text-slate-500" />
-                            Foundational Gap: Low/Medium Confidence + Wrong
-                          </span>
-                        )}
+                      <div className="mt-1">
+                        <StatusIndicator
+                          label={q.alignment}
+                          tone={
+                            q.alignment === 'Strong Mastery'
+                              ? 'lime'
+                              : q.alignment === 'Misconception'
+                              ? 'rose'
+                              : q.alignment === 'Lucky Guess'
+                              ? 'teal'
+                              : 'amber'
+                          }
+                        />
                       </div>
                     )}
                   </div>
                 </div>
 
-                <Badge variant={isCorrect ? 'success' : 'danger'} size="sm">
-                  {isCorrect ? (
-                    <>
-                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Correct
-                    </>
-                  ) : (
-                    <>
-                      <XCircle className="w-3.5 h-3.5 mr-1" /> Incorrect
-                    </>
-                  )}
-                </Badge>
+                <StatusIndicator
+                  label={isCorrect ? 'Correct' : 'Incorrect'}
+                  tone={isCorrect ? 'lime' : 'rose'}
+                />
               </div>
 
               {/* Options Review */}
@@ -285,11 +283,14 @@ export const QuizResultView: React.FC<QuizResultViewProps> = ({
                   const isUserSelection = userAnswer === opt;
                   const isAnswer = q.correctAnswer === opt;
 
-                  let optClass = 'bg-slate-50 border-slate-200 text-slate-600';
+                  let optClass =
+                    'bg-[#F7F5EF]/60 dark:bg-[#16263D]/60 border-[#E5E1D6] dark:border-[#1E2F47] text-slate-600 dark:text-slate-300';
                   if (isAnswer) {
-                    optClass = 'bg-emerald-50/80 border-emerald-300 text-emerald-950 font-semibold';
+                    optClass =
+                      'bg-teal-50 dark:bg-teal-950/40 border-teal-400/70 text-teal-950 dark:text-teal-100 font-semibold';
                   } else if (isUserSelection && !isCorrect) {
-                    optClass = 'bg-rose-50 border-rose-300 text-rose-950 line-through';
+                    optClass =
+                      'bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 text-rose-950 dark:text-rose-200 line-through';
                   }
 
                   return (
@@ -298,128 +299,137 @@ export const QuizResultView: React.FC<QuizResultViewProps> = ({
                       className={`p-2.5 rounded-lg border text-xs sm:text-sm flex items-center justify-between gap-2 ${optClass}`}
                     >
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs opacity-75">{String.fromCharCode(65 + optIdx)}.</span>
+                        <span className="font-mono text-xs opacity-75">
+                          {String.fromCharCode(65 + optIdx)}.
+                        </span>
                         <span>{opt}</span>
                       </div>
-                      {isAnswer && <span className="text-xs font-bold text-emerald-700">Correct Answer</span>}
-                      {isUserSelection && !isAnswer && <span className="text-xs font-bold text-rose-700">Your Answer</span>}
+                      {isAnswer && (
+                        <span className="text-[11px] font-mono font-bold text-teal-700 dark:text-teal-300 flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Correct
+                        </span>
+                      )}
+                      {isUserSelection && !isAnswer && (
+                        <span className="text-[11px] font-mono font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                          <XCircle className="w-3.5 h-3.5" /> Selected
+                        </span>
+                      )}
                     </div>
                   );
                 })}
               </div>
 
-              {/* Standard Explanation Callout */}
               {q.explanation && (
-                <div className="mt-3 ml-8 p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-700">
-                  <strong className="text-slate-900 block mb-0.5">Explanation:</strong>
+                <div className="ml-8 p-3 rounded-lg bg-[#F7F5EF] dark:bg-[#16263D] border border-[#E5E1D6] dark:border-[#1E2F47] text-xs sm:text-sm text-slate-700 dark:text-slate-300">
+                  <strong className="text-slate-900 dark:text-slate-100 block mb-0.5">
+                    Explanation
+                  </strong>
                   {q.explanation}
                 </div>
               )}
 
-              {/* AI Mistake Diagnosis Action for Incorrect Questions */}
               {!isCorrect && (
-                <div className="mt-3 ml-8 pt-2">
+                <div className="ml-8 pt-1">
                   <button
                     type="button"
                     onClick={() => handleDiagnoseMistake(q)}
                     disabled={isDiagnosing}
-                    className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors flex items-center gap-1.5"
+                    className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-[#0A1628] dark:bg-teal-600 hover:bg-[#16263D] dark:hover:bg-teal-500 text-white transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
                     {isDiagnosing ? (
                       <>
-                        <div className="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-                        Diagnosing Misconception...
+                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Diagnosing Mistake...</span>
                       </>
                     ) : mistakeExp ? (
                       <>
-                        <ChevronUp className="w-3.5 h-3.5" /> Close AI Mistake Diagnosis
+                        <ChevronUp className="w-3.5 h-3.5" />
+                        <span>Hide AI Mistake Diagnosis</span>
                       </>
                     ) : (
                       <>
-                        <Sparkles className="w-3.5 h-3.5 text-indigo-600" /> Diagnose Mistake with AI
+                        <Sparkles className="w-3.5 h-3.5 text-teal-300" />
+                        <span>Diagnose Mistake with AI</span>
                       </>
                     )}
                   </button>
 
                   {diagnosisError[q.id] && (
-                    <p className="text-xs text-rose-600 mt-1">{diagnosisError[q.id]}</p>
+                    <p className="text-xs text-rose-600 dark:text-rose-400 mt-1.5">
+                      {diagnosisError[q.id]}
+                    </p>
                   )}
 
-                  {/* 6-Part Pedagogical Mistake Breakdown Card */}
                   {mistakeExp && (
-                    <div className="mt-3 p-4 rounded-xl bg-slate-900 text-white space-y-3.5 text-xs sm:text-sm animate-in fade-in duration-200">
-                      <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                        <span className="font-bold text-indigo-300 flex items-center gap-1.5 text-xs uppercase tracking-wider font-mono">
+                    <div className="mt-3 p-4 rounded-xl bg-[#0A1628] text-white border border-[#1E2F47] space-y-3 text-xs sm:text-sm">
+                      <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                        <span className="font-mono font-bold text-teal-300 flex items-center gap-1.5 text-xs uppercase tracking-wider">
                           <BookOpen className="w-3.5 h-3.5" />
-                          Deep Mistake Diagnosis
+                          <span>Deep Mistake Diagnosis</span>
                         </span>
-                        <span className="text-[11px] text-slate-400">Pedagogical Learning Loop</span>
                       </div>
 
-                      {/* 1. Misunderstood Concept */}
                       <div>
-                        <strong className="text-indigo-200 block text-xs font-semibold uppercase tracking-wider">
+                        <strong className="text-teal-300 block text-xs uppercase tracking-wider">
                           1. Core Misunderstanding
                         </strong>
                         <p className="text-slate-200 mt-0.5">{mistakeExp.whatWasMisunderstood}</p>
                       </div>
 
-                      {/* 2. Why Selected Answer was Wrong */}
                       <div>
-                        <strong className="text-rose-300 block text-xs font-semibold uppercase tracking-wider">
-                          2. Why Selected Answer Was Incorrect
+                        <strong className="text-rose-300 block text-xs uppercase tracking-wider">
+                          2. Why Selected Option Was Wrong
                         </strong>
                         <p className="text-slate-200 mt-0.5">{mistakeExp.whySelectedWasWrong}</p>
                       </div>
 
-                      {/* 3. Why Correct Concept Works */}
                       <div>
-                        <strong className="text-emerald-300 block text-xs font-semibold uppercase tracking-wider">
+                        <strong className="text-lime-300 block text-xs uppercase tracking-wider">
                           3. Why The Correct Principle Holds
                         </strong>
                         <p className="text-slate-200 mt-0.5">{mistakeExp.whyCorrectWorks}</p>
                       </div>
 
-                      {/* 4. Simple Real-World Example */}
-                      <div className="p-2.5 rounded-lg bg-slate-800 border border-slate-700">
-                        <strong className="text-sky-300 block text-xs font-semibold uppercase tracking-wider mb-0.5">
-                          4. Intuitive Example / Analogy
+                      <div className="p-2.5 rounded-lg bg-[#0F1D32] border border-[#1E2F47]">
+                        <strong className="text-sky-300 block text-xs uppercase tracking-wider mb-0.5">
+                          4. Intuitive Example
                         </strong>
-                        <p className="text-slate-300 text-xs leading-relaxed">{mistakeExp.simpleExample}</p>
+                        <p className="text-slate-300 text-xs leading-relaxed">
+                          {mistakeExp.simpleExample}
+                        </p>
                       </div>
 
-                      {/* 5. Key Actionable Takeaway */}
-                      <div className="p-2.5 rounded-lg bg-indigo-950/80 border border-indigo-800">
-                        <strong className="text-indigo-300 block text-xs font-semibold uppercase tracking-wider mb-0.5">
+                      <div className="p-2.5 rounded-lg bg-teal-950/60 border border-teal-700/50">
+                        <strong className="text-teal-300 block text-xs uppercase tracking-wider mb-0.5">
                           5. Key Revision Takeaway
                         </strong>
-                        <p className="text-indigo-100 font-medium text-xs">{mistakeExp.keyTakeaway}</p>
+                        <p className="text-teal-100 font-medium text-xs">{mistakeExp.keyTakeaway}</p>
                       </div>
 
-                      {/* 6. Follow-up Practice Question */}
                       {mistakeExp.followUpQuestion && (
-                        <div className="p-3 rounded-lg bg-slate-800/90 border border-slate-700 space-y-2">
-                          <strong className="text-amber-300 block text-xs font-semibold uppercase tracking-wider">
-                            6. Follow-Up Practice Drill
+                        <div className="p-3 rounded-lg bg-[#0F1D32] border border-[#1E2F47] space-y-2">
+                          <strong className="text-amber-300 block text-xs uppercase tracking-wider">
+                            6. Follow-Up Drill
                           </strong>
                           <p className="text-white text-xs font-medium">
                             {mistakeExp.followUpQuestion.question}
                           </p>
-
                           <div className="space-y-1 pt-1">
                             {mistakeExp.followUpQuestion.options.map((opt, i) => (
                               <div
                                 key={i}
-                                className="p-2 rounded bg-slate-900 border border-slate-700/80 text-xs text-slate-300 flex items-center justify-between"
+                                className="p-2 rounded bg-[#0A1628] border border-[#1E2F47] text-xs text-slate-300 flex items-center justify-between"
                               >
                                 <span>{opt}</span>
-                                {revealedPracticeAnswers[q.id] && opt === mistakeExp.followUpQuestion?.correctAnswer && (
-                                  <span className="text-[11px] font-bold text-emerald-400">Correct Answer</span>
-                                )}
+                                {revealedPracticeAnswers[q.id] &&
+                                  opt === mistakeExp.followUpQuestion?.correctAnswer && (
+                                    <span className="text-[11px] font-bold text-teal-400">
+                                      Correct Answer
+                                    </span>
+                                  )}
                               </div>
                             ))}
                           </div>
-
                           <button
                             type="button"
                             onClick={() =>
@@ -428,13 +438,14 @@ export const QuizResultView: React.FC<QuizResultViewProps> = ({
                                 [q.id]: !prev[q.id],
                               }))
                             }
-                            className="mt-1 text-xs text-indigo-400 hover:text-indigo-300 font-semibold"
+                            className="mt-1 text-xs text-teal-400 hover:text-teal-300 font-semibold cursor-pointer"
                           >
-                            {revealedPracticeAnswers[q.id] ? 'Hide Answer & Hint' : 'Reveal Answer & Explanation'}
+                            {revealedPracticeAnswers[q.id]
+                              ? 'Hide Answer'
+                              : 'Reveal Answer & Explanation'}
                           </button>
-
                           {revealedPracticeAnswers[q.id] && (
-                            <p className="text-xs text-slate-300 bg-slate-900 p-2 rounded border border-slate-800">
+                            <p className="text-xs text-slate-300 bg-[#0A1628] p-2 rounded border border-[#1E2F47]">
                               {mistakeExp.followUpQuestion.explanation}
                             </p>
                           )}

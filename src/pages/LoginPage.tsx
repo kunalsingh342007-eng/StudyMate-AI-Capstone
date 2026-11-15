@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import {
   GraduationCap,
-  Sparkles,
   Mail,
   Lock,
   User,
@@ -35,13 +34,11 @@ export const LoginPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Forgot password modal state
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotStatus, setForgotStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  // Redirect authenticated users away from login
   useEffect(() => {
     if (currentUser) {
       const from = (location.state as any)?.from?.pathname || '/dashboard';
@@ -58,7 +55,7 @@ export const LoginPage: React.FC = () => {
     try {
       if (mode === 'signin') {
         await login(email, password);
-        setSuccessMessage('Welcome back! Redirecting to your study workspace...');
+        setSuccessMessage('Welcome back! Redirecting to your learning studio...');
       } else {
         await register({
           email,
@@ -66,7 +63,7 @@ export const LoginPage: React.FC = () => {
           displayName: name,
           academicLevel,
         });
-        setSuccessMessage('Account created successfully! Preparing your study workspace...');
+        setSuccessMessage('Account created! Preparing your learning studio...');
       }
       setTimeout(() => {
         navigate('/dashboard');
@@ -96,7 +93,6 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-
   const handleResetPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setForgotStatus(null);
@@ -118,37 +114,36 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-[#F8F7FC] dark:bg-[#0B1220] text-[#1E1B4B] dark:text-[#F8FAFC] flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden font-sans selection:bg-purple-600 selection:text-white transition-colors duration-200">
-      {/* Background ambient lighting */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-b from-purple-200/50 dark:from-purple-900/20 via-violet-100/30 dark:via-violet-950/10 to-transparent blur-3xl pointer-events-none" />
+  const inputClass =
+    'w-full text-xs sm:text-sm pl-10 pr-4 py-2.5 rounded-xl border border-[#E5E1D6] dark:border-[#1E2F47] focus:outline-none focus:ring-2 focus:ring-teal-600/30 focus:border-teal-600 bg-[#F7F5EF] dark:bg-[#16263D] text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500';
 
-      {/* Brand Header */}
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center relative z-10 mb-6">
+  return (
+    <div className="min-h-screen bg-[#F7F5EF] dark:bg-[#0A1628] text-slate-900 dark:text-slate-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans transition-colors duration-200">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center mb-6 px-4">
         <Link to="/" className="inline-flex items-center gap-3 group focus:outline-none">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-700 flex items-center justify-center text-white shadow-xl shadow-purple-600/30 group-hover:scale-105 transition-transform">
-            <GraduationCap className="w-6 h-6 text-white" />
+          <div className="w-11 h-11 rounded-xl bg-[#0A1628] dark:bg-[#16263D] border border-[#1E2F47] flex items-center justify-center text-teal-400">
+            <GraduationCap className="w-6 h-6" />
           </div>
           <div className="text-left">
-            <span className="text-2xl font-extrabold tracking-tight text-[#1E1B4B] dark:text-[#F8FAFC]">StudyMate</span>
-            <span className="ml-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 rounded-md border border-purple-200 dark:border-purple-800">
-              AI Copilot
+            <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+              StudyMate AI
+            </span>
+            <span className="block text-[11px] font-mono text-teal-700 dark:text-teal-400">
+              Personal Learning Studio
             </span>
           </div>
         </Link>
-        <h2 className="mt-4 text-2xl sm:text-3xl font-extrabold text-[#1E1B4B] dark:text-[#F8FAFC] tracking-tight">
-          {mode === 'signin' ? 'Sign in to your study workspace' : 'Create your student account'}
-        </h2>
-        <p className="mt-1.5 text-xs sm:text-sm text-slate-500 dark:text-[#A7B4C8]">
-          Personalized syllabus tracking, spaced retrieval, and adaptive AI tutoring
+        <h1 className="mt-5 text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+          {mode === 'signin' ? 'Sign in to your studio' : 'Create your student account'}
+        </h1>
+        <p className="mt-1.5 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+          Personalized study schedules, concept explanations, and active recall tracking
         </p>
       </div>
 
-      {/* Main Auth Card */}
-      <div className="sm:mx-auto sm:w-full sm:max-w-lg relative z-10 px-4 sm:px-0">
-        <div className="bg-white dark:bg-[#172033] rounded-3xl shadow-xl shadow-purple-950/5 dark:shadow-black/40 border border-purple-100 dark:border-[#334155] overflow-hidden transition-colors duration-200">
-          {/* Sign In / Sign Up Mode Switcher Tabs */}
-          <div className="flex border-b border-purple-100 dark:border-[#334155] bg-purple-50/40 dark:bg-[#0B1220]/60 p-1.5 gap-1.5">
+      <div className="sm:mx-auto sm:w-full sm:max-w-lg px-4 sm:px-0">
+        <div className="bg-white dark:bg-[#0F1D32] rounded-2xl shadow-sm border border-[#E5E1D6] dark:border-[#1E2F47] overflow-hidden">
+          <div className="flex border-b border-[#E5E1D6] dark:border-[#1E2F47] bg-[#EFECE3]/60 dark:bg-[#0A1628]/60 p-1.5 gap-1.5">
             <button
               type="button"
               onClick={() => {
@@ -156,10 +151,10 @@ export const LoginPage: React.FC = () => {
                 setErrorMessage(null);
                 setSuccessMessage(null);
               }}
-              className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer ${
+              className={`flex-1 py-2 text-xs sm:text-sm font-semibold rounded-xl transition-colors cursor-pointer ${
                 mode === 'signin'
-                  ? 'bg-white dark:bg-[#26344B] text-purple-900 dark:text-[#F8FAFC] shadow-xs border border-purple-100/60 dark:border-[#334155]'
-                  : 'text-slate-600 dark:text-[#A7B4C8] hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-[#172033]/60'
+                  ? 'bg-white dark:bg-[#16263D] text-slate-900 dark:text-slate-100 shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
               }`}
             >
               Sign In
@@ -171,30 +166,28 @@ export const LoginPage: React.FC = () => {
                 setErrorMessage(null);
                 setSuccessMessage(null);
               }}
-              className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer ${
+              className={`flex-1 py-2 text-xs sm:text-sm font-semibold rounded-xl transition-colors cursor-pointer ${
                 mode === 'signup'
-                  ? 'bg-white dark:bg-[#26344B] text-purple-900 dark:text-[#F8FAFC] shadow-xs border border-purple-100/60 dark:border-[#334155]'
-                  : 'text-slate-600 dark:text-[#A7B4C8] hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-[#172033]/60'
+                  ? 'bg-white dark:bg-[#16263D] text-slate-900 dark:text-slate-100 shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
               }`}
             >
               Create Account
             </button>
           </div>
 
-          <div className="p-6 sm:p-8 space-y-6">
-
-            {/* Error banner */}
+          <div className="p-6 sm:p-8 space-y-5">
             {errorMessage && (
               <div
                 role="alert"
-                className="p-3.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-800 dark:text-rose-200 rounded-2xl text-xs font-semibold flex items-center gap-2.5 animate-in fade-in duration-200"
+                className="p-3.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-800 dark:text-rose-200 rounded-xl text-xs font-semibold flex items-center gap-2.5"
               >
                 <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
                 <span className="flex-1">{errorMessage}</span>
                 <button
                   type="button"
                   onClick={() => setErrorMessage(null)}
-                  className="p-1 hover:bg-rose-100 dark:hover:bg-rose-900/50 rounded-lg text-rose-600 dark:text-rose-400 transition-colors"
+                  className="p-1 hover:bg-rose-100 dark:hover:bg-rose-900/50 rounded-lg"
                   aria-label="Dismiss error"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -202,25 +195,23 @@ export const LoginPage: React.FC = () => {
               </div>
             )}
 
-            {/* Success notification */}
             {successMessage && (
               <div
                 role="status"
-                className="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 text-emerald-800 dark:text-emerald-200 rounded-2xl text-xs font-semibold flex items-center gap-2 animate-in fade-in duration-200"
+                className="p-3.5 bg-lime-50 dark:bg-lime-950/30 border border-lime-200 dark:border-lime-900/50 text-lime-800 dark:text-lime-200 rounded-xl text-xs font-semibold flex items-center gap-2"
               >
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-lime-600 dark:text-lime-400 shrink-0" />
                 <span>{successMessage}</span>
               </div>
             )}
 
-            {/* Google Sign-In Action */}
             <button
               type="button"
               onClick={handleGoogleSignIn}
               disabled={isLoading}
-              className="w-full py-2.5 px-4 bg-white dark:bg-[#26344B] hover:bg-slate-50 dark:hover:bg-[#1E293B] border border-slate-300 dark:border-[#334155] text-slate-700 dark:text-[#F8FAFC] rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-3 transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
+              className="w-full py-2.5 px-4 bg-white dark:bg-[#16263D] hover:bg-[#F7F5EF] dark:hover:bg-[#1E2F47] border border-[#E5E1D6] dark:border-[#1E2F47] text-slate-800 dark:text-slate-100 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-3 transition-colors cursor-pointer disabled:opacity-50"
             >
-              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
                 <path
                   fill="#4285F4"
                   d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17Z"
@@ -241,19 +232,19 @@ export const LoginPage: React.FC = () => {
               <span>{mode === 'signin' ? 'Sign in with Google' : 'Sign up with Google'}</span>
             </button>
 
-            {/* Divider */}
             <div className="relative flex items-center justify-center">
-              <div className="border-t border-slate-200 dark:border-[#334155] w-full" />
-              <span className="bg-white dark:bg-[#172033] px-3 text-[11px] font-bold text-slate-400 dark:text-[#A7B4C8] uppercase tracking-wider relative">
+              <div className="border-t border-[#E5E1D6] dark:border-[#1E2F47] w-full" />
+              <span className="bg-white dark:bg-[#0F1D32] px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider relative whitespace-nowrap">
                 or with email
               </span>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === 'signup' && (
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-[#A7B4C8]">Full Name</label>
+                  <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+                    Full Name
+                  </label>
                   <div className="relative">
                     <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
@@ -264,15 +255,17 @@ export const LoginPage: React.FC = () => {
                         setName(e.target.value);
                         if (errorMessage) setErrorMessage(null);
                       }}
-                      placeholder="Alex Rivera"
-                      className="w-full text-xs sm:text-sm pl-10 pr-4 py-2.5 rounded-xl border border-purple-200 dark:border-[#334155] focus:outline-purple-600 focus:border-purple-600 bg-white dark:bg-[#26344B] text-slate-900 dark:text-[#F8FAFC] placeholder-slate-400 dark:placeholder-slate-500"
+                      placeholder="Your full name"
+                      className={inputClass}
                     />
                   </div>
                 </div>
               )}
 
               <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-700 dark:text-[#A7B4C8]">Email Address</label>
+                <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+                  Email Address
+                </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
@@ -284,14 +277,16 @@ export const LoginPage: React.FC = () => {
                       if (errorMessage) setErrorMessage(null);
                     }}
                     placeholder="student@university.edu"
-                    className="w-full text-xs sm:text-sm pl-10 pr-4 py-2.5 rounded-xl border border-purple-200 dark:border-[#334155] focus:outline-purple-600 focus:border-purple-600 bg-white dark:bg-[#26344B] text-slate-900 dark:text-[#F8FAFC] placeholder-slate-400 dark:placeholder-slate-500"
+                    className={inputClass}
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-[#A7B4C8]">Password</label>
+                  <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+                    Password
+                  </label>
                   {mode === 'signin' && (
                     <button
                       type="button"
@@ -299,7 +294,7 @@ export const LoginPage: React.FC = () => {
                         setForgotEmail(email);
                         setShowForgotModal(true);
                       }}
-                      className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 cursor-pointer"
+                      className="text-[11px] font-semibold text-teal-700 dark:text-teal-400 hover:underline cursor-pointer"
                     >
                       Forgot password?
                     </button>
@@ -317,25 +312,27 @@ export const LoginPage: React.FC = () => {
                       if (errorMessage) setErrorMessage(null);
                     }}
                     placeholder="At least 6 characters"
-                    className="w-full text-xs sm:text-sm pl-10 pr-4 py-2.5 rounded-xl border border-purple-200 dark:border-[#334155] focus:outline-purple-600 focus:border-purple-600 bg-white dark:bg-[#26344B] text-slate-900 dark:text-[#F8FAFC] placeholder-slate-400 dark:placeholder-slate-500"
+                    className={inputClass}
                   />
                 </div>
               </div>
 
               {mode === 'signup' && (
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-[#A7B4C8]">Academic Standing</label>
+                  <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+                    Academic Standing
+                  </label>
                   <select
                     value={academicLevel}
                     onChange={(e) => setAcademicLevel(e.target.value)}
-                    className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-purple-200 dark:border-[#334155] focus:outline-purple-600 focus:border-purple-600 bg-white dark:bg-[#26344B] text-slate-900 dark:text-[#F8FAFC]"
+                    className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-[#E5E1D6] dark:border-[#1E2F47] focus:outline-none focus:ring-2 focus:ring-teal-600/30 bg-[#F7F5EF] dark:bg-[#16263D] text-slate-900 dark:text-slate-100"
                   >
                     <option value="Undergraduate Freshman">Undergraduate Freshman</option>
                     <option value="Undergraduate Sophomore">Undergraduate Sophomore</option>
                     <option value="Undergraduate Junior">Undergraduate Junior</option>
                     <option value="Undergraduate Senior">Undergraduate Senior</option>
                     <option value="Graduate / Master's">Graduate / Master&apos;s</option>
-                    <option value="Competitive Exam Candidate">Competitive Exam Candidate (GATE, GRE, MCAT)</option>
+                    <option value="Competitive Exam Candidate">Competitive Exam Candidate</option>
                   </select>
                 </div>
               )}
@@ -343,7 +340,7 @@ export const LoginPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full mt-2 py-3 px-4 bg-purple-600 hover:bg-purple-700 active:scale-[0.99] text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-purple-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                className="w-full mt-2 py-3 px-4 bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500 text-white rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
               >
                 {isLoading ? (
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -356,52 +353,50 @@ export const LoginPage: React.FC = () => {
               </button>
             </form>
 
-            <div className="pt-2 border-t border-purple-100 dark:border-[#334155] flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-[#A7B4C8]">
-              <Shield className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+            <div className="pt-3 border-t border-[#E5E1D6] dark:border-[#1E2F47] flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <Shield className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400" />
               <span>
                 {isFirebaseConfigured
                   ? 'Protected with Firebase Authentication & Firestore'
-                  : 'Operating in secure client sandbox'}
+                  : 'Operating in local browser persistence mode'}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Footer link to landing */}
-        <p className="text-center text-xs text-slate-500 dark:text-[#A7B4C8] mt-6">
-          <Link to="/" className="text-purple-600 dark:text-purple-400 font-semibold hover:underline">
+        <p className="text-center text-xs text-slate-600 dark:text-slate-400 mt-6">
+          <Link to="/" className="text-teal-700 dark:text-teal-400 font-semibold hover:underline">
             &larr; Back to StudyMate AI Overview
           </Link>
         </p>
       </div>
 
-      {/* Forgot Password Modal */}
       {showForgotModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs"
           role="dialog"
           aria-modal="true"
           aria-labelledby="forgot-modal-title"
         >
-          <div className="bg-white dark:bg-[#172033] rounded-3xl max-w-md w-full shadow-2xl border border-purple-100 dark:border-[#334155] p-6 space-y-4 relative transition-colors duration-200">
+          <div className="bg-white dark:bg-[#0F1D32] rounded-2xl max-w-md w-full shadow-2xl border border-[#E5E1D6] dark:border-[#1E2F47] p-6 space-y-4 relative">
             <button
               type="button"
               onClick={() => {
                 setShowForgotModal(false);
                 setForgotStatus(null);
               }}
-              className="absolute top-5 right-5 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-[#26344B] text-slate-500 dark:text-[#A7B4C8] hover:text-slate-800 dark:hover:text-white transition-colors"
+              className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-[#EFECE3] dark:hover:bg-[#16263D] text-slate-500 dark:text-slate-400 cursor-pointer"
               aria-label="Close dialog"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="space-y-1">
-              <h3 id="forgot-modal-title" className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC]">
+              <h3 id="forgot-modal-title" className="text-lg font-bold text-slate-900 dark:text-slate-100">
                 Reset Your Password
               </h3>
-              <p className="text-xs text-slate-500 dark:text-[#A7B4C8]">
-                Enter your registered student email address and we will send you a password reset link.
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                Enter your registered email address and we will send you a password reset link.
               </p>
             </div>
 
@@ -409,12 +404,12 @@ export const LoginPage: React.FC = () => {
               <div
                 className={`p-3 rounded-xl text-xs font-semibold flex items-center gap-2 ${
                   forgotStatus.type === 'success'
-                    ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-900/60'
+                    ? 'bg-lime-50 dark:bg-lime-950/30 text-lime-800 dark:text-lime-200 border border-lime-200 dark:border-lime-900/50'
                     : 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-900/60'
                 }`}
               >
                 {forgotStatus.type === 'success' ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 text-lime-600 dark:text-lime-400 shrink-0" />
                 ) : (
                   <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
                 )}
@@ -431,7 +426,7 @@ export const LoginPage: React.FC = () => {
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
                   placeholder="student@university.edu"
-                  className="w-full text-xs sm:text-sm pl-10 pr-4 py-2.5 rounded-xl border border-purple-200 dark:border-[#334155] focus:outline-purple-600 focus:border-purple-600 bg-white dark:bg-[#26344B] text-slate-900 dark:text-[#F8FAFC] placeholder-slate-400 dark:placeholder-slate-500"
+                  className={inputClass}
                 />
               </div>
 
@@ -439,14 +434,14 @@ export const LoginPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowForgotModal(false)}
-                  className="flex-1 py-2.5 px-3 bg-slate-100 dark:bg-[#26344B] hover:bg-slate-200 dark:hover:bg-[#334155] text-slate-700 dark:text-[#F8FAFC] rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                  className="flex-1 py-2.5 px-3 bg-[#EFECE3] dark:bg-[#16263D] hover:bg-[#E5E1D6] dark:hover:bg-[#1E2F47] text-slate-800 dark:text-slate-100 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={forgotLoading}
-                  className="flex-1 py-2.5 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-colors shadow-xs cursor-pointer disabled:opacity-50"
+                  className="flex-1 py-2.5 px-3 bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
                 >
                   {forgotLoading ? 'Sending...' : 'Send Reset Link'}
                 </button>

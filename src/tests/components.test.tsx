@@ -34,14 +34,23 @@ describe('Dashboard Component Testing', () => {
     expect(screen.getByText(/45 min/i)).toBeDefined();
   });
 
-  it('renders empty state when no priority task exists', () => {
-    render(
+  it('renders honest empty state when no tasks exist vs completed state when tasks are finished', () => {
+    const { rerender } = render(
       <BrowserRouter>
-        <PriorityCard task={null} totalPendingToday={0} />
+        <PriorityCard task={null} totalPendingToday={0} hasAnyTasks={false} />
       </BrowserRouter>
     );
 
-    expect(screen.getByText(/All Caught Up/i)).toBeDefined();
+    expect(screen.getByText(/No tasks yet/i)).toBeDefined();
+    expect(screen.getByText(/Create Task/i)).toBeDefined();
+
+    rerender(
+      <BrowserRouter>
+        <PriorityCard task={null} totalPendingToday={0} hasAnyTasks={true} />
+      </BrowserRouter>
+    );
+
+    expect(screen.getByText(/All Scheduled Tasks Completed/i)).toBeDefined();
   });
 
   it('renders StatsGrid with user streak and progress metrics', () => {

@@ -1,130 +1,145 @@
 import React from 'react';
-import { Flame, CheckCircle2, Clock, Calendar, HelpCircle, TrendingUp, Target } from 'lucide-react';
+import { Flame, CheckCircle2, Clock, Calendar, HelpCircle, BookOpen } from 'lucide-react';
 import { StudyProgress, StudyPlan } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 
 interface StatsGridProps {
   progress: StudyProgress;
   activePlan: StudyPlan | null;
+  dueReviewsCount?: number;
+  assessedConceptsCount?: number;
+  targetExamDate?: string;
 }
 
-export const StatsGrid: React.FC<StatsGridProps> = ({ progress, activePlan }) => {
-  let preferences = {
-    dailyStudyGoalMinutes: 180,
-    defaultStudyDurationMinutes: 45,
-    studyRemindersEnabled: true,
-  };
+export const StatsGrid: React.FC<StatsGridProps> = ({
+  progress,
+  activePlan,
+  dueReviewsCount = 0,
+  assessedConceptsCount,
+  targetExamDate,
+}) => {
+  let defaultDuration = 45;
 
   try {
     const auth = useAuth();
-    if (auth?.preferences) {
-      preferences = {
-        dailyStudyGoalMinutes: auth.preferences.dailyStudyGoalMinutes || 180,
-        defaultStudyDurationMinutes: auth.preferences.defaultStudyDurationMinutes || 45,
-        studyRemindersEnabled: auth.preferences.studyRemindersEnabled ?? true,
-      };
+    if (auth?.preferences?.defaultStudyDurationMinutes) {
+      defaultDuration = auth.preferences.defaultStudyDurationMinutes;
     }
   } catch {
-    // Falls back to safe default preferences when rendered outside AuthProvider
+    // Safe fallback when rendered standalone outside AuthProvider in unit tests
   }
 
   const today = new Date();
-  let daysUntilExam = 30;
-  if (activePlan?.examDate) {
-    const examTime = new Date(activePlan.examDate).getTime();
-    daysUntilExam = Math.max(0, Math.ceil((examTime - today.getTime()) / (1000 * 3600 * 24)));
+  const effectiveExamDate = activePlan?.examDate || targetExamDate;
+  let daysUntilExam: number | null = null;
+  if (effectiveExamDate) {
+    const examTime = new Date(effectiveExamDate).getTime();
+    if (!Number.isNaN(examTime)) {
+      daysUntilExam = Math.max(0, Math.ceil((examTime - today.getTime()) / (1000 * 3600 * 24)));
+    }
   }
 
-  const completionRate = activePlan && activePlan.tasks.length > 0
-    ? Math.round((progress.completedTasksCount / activePlan.tasks.length) * 100)
-    : 0;
+  const totalTasks = progress.totalTasksCount || activePlan?.tasks.length || 0;
+  const completionRate =
+    totalTasks > 0 ? Math.round((progress.completedTasksCount / totalTasks) * 100) : 0;
 
-  const dailyGoalHours = Math.round((preferences.dailyStudyGoalMinutes / 60) * 10) / 10;
+  const conceptsCount =
+    typeof assessedConceptsCount === 'number'
+      ? assessedConceptsCount
+      : progress.masteredTopics.length + progress.weakTopicsIdentified.length;
+
+  const hasRecordedActivity =
+    progress.completedTasksCount > 0 ||
+    progress.quizzesTaken > 0 ||
+    progress.totalHoursStudied > 0;
 
   const stats = [
     {
-      label: 'Study Streak',
-      value: `${progress.streakDays} Day${progress.streakDays === 1 ? '' : 's'}`,
-      sub: preferences.studyRemindersEnabled ? 'Daily reminders active' : 'Streak tracking',
-      icon: Flame,
-      color: 'text-amber-500',
-      bgColor: 'bg-amber-50',
-    },
-    {
-      label: 'Daily Study Goal',
-      value: `${dailyGoalHours}h / day`,
-      sub: `${preferences.defaultStudyDurationMinutes || 45}m focus chunks`,
-      icon: Target,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
-    },
-    {
-      label: 'Exam Countdown',
-      value: `${daysUntilExam} Days`,
-      sub: activePlan?.subject ? activePlan.subject.slice(0, 20) + '...' : 'Target Exam',
-      icon: Calendar,
-      color: 'text-indigo-600',
-      bgColor: 'bg-indigo-50',
-    },
-    {
-      label: 'Completed Tasks',
-      value: `${progress.completedTasksCount} / ${progress.totalTasksCount || activePlan?.tasks.length || 0}`,
-      sub: `${completionRate}% syllabus covered`,
+      label: 'Completed Sessions',
+      value: `${progress.completedTasksCount} / ${totalTasks}`,
+      sub: totalTasks > 0 ? `${completionRate}% of plan` : 'No tasks added yet',
       icon: CheckCircle2,
-      color: 'text-emerald-600',
-      bgColor: 'bg-emerald-50',
+      tone: 'text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/50',
     },
     {
-      label: 'Total Hours Studied',
+      label: 'Study Time',
       value: `${progress.totalHoursStudied}h`,
-      sub: 'Logged across sessions',
+      sub: hasRecordedActivity ? `${defaultDuration}m target focus` : 'Appears after first session',
       icon: Clock,
-      color: 'text-indigo-600',
-      bgColor: 'bg-indigo-50',
+      tone: 'text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50',
     },
     {
-      label: 'Quizzes Taken',
+      label: 'Active Streak',
+      value: `${progress.streakDays} Day${progress.streakDays === 1 ? '' : 's'}`,
+      sub: hasRecordedActivity ? 'Logged continuity' : 'Starts on first activity',
+      icon: Flame,
+      tone: 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50',
+    },
+    {
+      label: 'Quizzes Completed',
       value: `${progress.quizzesTaken}`,
-      sub: `Avg score: ${progress.averageQuizScore}%`,
+      sub: progress.quizzesTaken > 0 ? `Recent avg: ${progress.averageQuizScore}%` : 'No quizzes scored yet',
       icon: HelpCircle,
-      color: 'text-violet-600',
-      bgColor: 'bg-violet-50',
+      tone: 'text-lime-700 dark:text-lime-300 bg-lime-50 dark:bg-lime-950/40',
     },
     {
-      label: 'Weak Areas',
-      value: `${progress.weakTopicsIdentified.length}`,
-      sub: 'Prioritized for review',
-      icon: TrendingUp,
-      color: 'text-rose-600',
-      bgColor: 'bg-rose-50',
+      label: 'Concepts Assessed',
+      value: `${conceptsCount}`,
+      sub:
+        dueReviewsCount > 0
+          ? `${dueReviewsCount} spaced review${dueReviewsCount === 1 ? '' : 's'} due`
+          : conceptsCount > 0
+          ? 'No reviews overdue'
+          : 'Complete a quiz to measure',
+      icon: BookOpen,
+      tone: 'text-slate-700 dark:text-slate-200 bg-[#EFECE3] dark:bg-[#16263D]',
+    },
+    {
+      label: 'Exam Window',
+      value: daysUntilExam !== null ? `${daysUntilExam} Days` : 'Not set',
+      sub: activePlan?.subject
+        ? activePlan.subject
+        : targetExamDate
+        ? 'From study profile'
+        : 'Set target date in planner',
+      icon: Calendar,
+      tone: 'text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/50',
     },
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
-      {stats.map((stat, idx) => {
-        const Icon = stat.icon;
-        return (
-          <div
-            key={idx}
-            className="bg-white rounded-3xl border border-purple-100/80 p-4 sm:p-5 shadow-xs hover:shadow-md hover:border-purple-200 transition-all flex flex-col justify-between"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono">
-                {stat.label}
-              </span>
-              <div className={`w-8 h-8 rounded-xl ${stat.bgColor} ${stat.color} flex items-center justify-center shrink-0`}>
-                <Icon className="w-4 h-4" aria-hidden="true" />
+    <div className="space-y-3">
+      {!hasRecordedActivity && (
+        <p className="text-xs text-slate-600 dark:text-slate-400">
+          Progress metrics, streaks, and mastery averages start at zero and update automatically once you complete a task, study session, or quiz.
+        </p>
+      )}
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
+        {stats.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <div
+              key={stat.label}
+              className="bg-white dark:bg-[#0F1D32] rounded-2xl border border-[#E5E1D6] dark:border-[#1E2F47] p-4 sm:p-5 flex flex-col justify-between transition-colors"
+            >
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <span className="text-[11px] font-mono font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider leading-tight">
+                  {stat.label}
+                </span>
+                <div className={`w-8 h-8 rounded-lg ${stat.tone} flex items-center justify-center shrink-0`}>
+                  <Icon className="w-4 h-4" aria-hidden="true" />
+                </div>
+              </div>
+              <div>
+                <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight tabular-nums">
+                  {stat.value}
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">{stat.sub}</p>
               </div>
             </div>
-            <div>
-              <div className="text-xl sm:text-2xl font-extrabold text-[#1E1B4B] tracking-tight">{stat.value}</div>
-              <p className="text-[11px] text-slate-500 truncate mt-0.5">{stat.sub}</p>
-            </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 };
-

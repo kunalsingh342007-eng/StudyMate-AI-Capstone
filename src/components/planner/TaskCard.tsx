@@ -9,10 +9,9 @@ import {
   ChevronDown,
   ChevronUp,
   Target,
-  Sparkles,
 } from 'lucide-react';
 import { StudyTask } from '../../types';
-import { Badge } from '../ui/Common';
+import { StatusIndicator } from '../ui/Common';
 
 interface TaskCardProps {
   task: StudyTask;
@@ -34,11 +33,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   const isCompleted = task.status === 'completed';
   const isMissed = task.status === 'missed';
 
-  const priorityVariants = {
-    High: 'danger',
-    Medium: 'warning',
-    Low: 'default',
-  } as const;
+  const priorityTone =
+    task.priority === 'High' ? 'rose' : task.priority === 'Medium' ? 'amber' : 'neutral';
 
   const handleSaveNotes = () => {
     onSaveNotes(task.id, noteText);
@@ -47,60 +43,61 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
   return (
     <article
-      className={`rounded-3xl border transition-all duration-200 ${
+      className={`rounded-2xl border transition-colors ${
         isCompleted
-          ? 'bg-slate-50/80 border-purple-100/60 opacity-90'
+          ? 'bg-[#F7F5EF] dark:bg-[#0B1626] border-[#E5E1D6] dark:border-[#1E2F47] opacity-85'
           : isMissed
-          ? 'bg-rose-50/30 border-rose-200'
-          : 'bg-white border-purple-100/80 hover:border-purple-300 shadow-xs hover:shadow-md'
+          ? 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/60'
+          : 'bg-white dark:bg-[#0F1D32] border-[#E5E1D6] dark:border-[#1E2F47] hover:border-teal-500/40 dark:hover:border-teal-500/40'
       }`}
       aria-labelledby={`task-title-${task.id}`}
     >
       <div className="p-5 sm:p-6">
-        {/* Header meta */}
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{task.day}</span>
-            <span className="text-xs text-slate-400">&bull;</span>
-            <span className="text-xs text-slate-500 font-mono">{task.date}</span>
-          </div>
-
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <Badge variant={priorityVariants[task.priority]} size="sm">
-              {task.priority} Priority
-            </Badge>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
-              <Clock className="w-3 h-3 inline mr-1" />
+        {/* Metadata row (unboxed typographic separators) */}
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <span className="font-semibold text-slate-700 dark:text-slate-300">{task.day}</span>
+            <span aria-hidden="true">&middot;</span>
+            <span className="font-mono tabular-nums">{task.date}</span>
+            <span aria-hidden="true">&middot;</span>
+            <span className="inline-flex items-center gap-1 tabular-nums">
+              <Clock className="w-3.5 h-3.5" aria-hidden="true" />
               {task.durationMinutes} min
             </span>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-50 text-slate-700 border border-slate-200">
-              {task.difficulty}
-            </span>
+          </div>
+
+          <div className="flex items-center gap-3 text-xs">
+            <StatusIndicator label={`${task.priority} priority`} tone={priorityTone} />
+            <span className="text-slate-400 dark:text-slate-500" aria-hidden="true">&middot;</span>
+            <span className="text-slate-600 dark:text-slate-300 font-medium">{task.difficulty}</span>
           </div>
         </div>
 
-        {/* Task Title & Subtopic */}
+        {/* Title & Completion toggle */}
         <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1 flex-1">
+          <div className="space-y-1 flex-1 min-w-0">
             <h3
               id={`task-title-${task.id}`}
-              className={`text-base sm:text-lg font-bold text-[#1E1B4B] leading-snug ${
-                isCompleted ? 'line-through text-slate-400' : ''
+              className={`text-base sm:text-lg font-bold leading-snug ${
+                isCompleted
+                  ? 'line-through text-slate-400 dark:text-slate-500'
+                  : 'text-slate-900 dark:text-slate-100'
               }`}
             >
               {task.topic}
             </h3>
-            <p className="text-xs sm:text-sm font-semibold text-purple-700">{task.subtopic}</p>
+            <p className="text-xs sm:text-sm font-medium text-teal-700 dark:text-teal-400">
+              {task.subtopic}
+            </p>
           </div>
 
-          {/* Quick Check Action */}
           <button
             type="button"
             onClick={() => onStatusChange(task.id, isCompleted ? 'pending' : 'completed')}
-            className={`shrink-0 p-1.5 rounded-xl border transition-colors cursor-pointer ${
+            className={`shrink-0 p-2 rounded-xl border transition-colors cursor-pointer ${
               isCompleted
-                ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
-                : 'bg-white text-slate-300 border-slate-300 hover:border-purple-600 hover:text-purple-600'
+                ? 'bg-lime-600 text-white border-lime-600 hover:bg-lime-700'
+                : 'bg-[#F7F5EF] dark:bg-[#16263D] text-slate-400 dark:text-slate-500 border-[#E5E1D6] dark:border-[#1E2F47] hover:border-teal-600 hover:text-teal-700 dark:hover:text-teal-400'
             }`}
             title={isCompleted ? 'Mark as pending' : 'Mark as completed'}
             aria-label={isCompleted ? `Mark ${task.topic} as pending` : `Mark ${task.topic} as completed`}
@@ -110,19 +107,18 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         </div>
 
         {/* Learning Objective */}
-        <div className="mt-3.5 p-3 rounded-2xl bg-[#F8F7FC] border border-purple-100 flex items-start gap-2.5 text-xs sm:text-sm text-slate-700">
-          <Target className="w-4 h-4 text-purple-600 mt-0.5 shrink-0" aria-hidden="true" />
+        <div className="mt-3.5 p-3.5 rounded-xl bg-[#F7F5EF] dark:bg-[#16263D] border border-[#E5E1D6] dark:border-[#1E2F47] flex items-start gap-2.5 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
+          <Target className="w-4 h-4 text-teal-700 dark:text-teal-400 mt-0.5 shrink-0" aria-hidden="true" />
           <div>
-            <span className="font-semibold text-slate-900">Objective: </span>
+            <span className="font-semibold text-slate-900 dark:text-slate-100">Objective: </span>
             {task.learningObjective}
           </div>
         </div>
 
-        {/* Missed session banner if marked */}
         {isMissed && (
-          <div className="mt-2.5 p-2.5 rounded-2xl bg-rose-100/70 border border-rose-200 text-xs text-rose-900 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5">
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          <div className="mt-3 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs text-rose-900 dark:text-rose-200 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
               <span>
                 <strong>Session missed</strong>: {task.missedReason || 'Schedule conflict'}
               </span>
@@ -130,44 +126,45 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             <button
               type="button"
               onClick={() => onMissedClick(task)}
-              className="text-xs font-semibold text-rose-700 underline hover:text-rose-900 cursor-pointer"
+              className="text-xs font-semibold text-rose-700 dark:text-rose-300 underline hover:opacity-80 cursor-pointer whitespace-nowrap"
             >
               Re-adjust Plan
             </button>
           </div>
         )}
 
-        {/* Collapsible Details: Revision & Practice Recommendation */}
+        {/* Collapsible Details */}
         {expanded && (
-          <div className="mt-4 pt-3 border-t border-purple-100 space-y-3 text-xs sm:text-sm">
+          <div className="mt-4 pt-4 border-t border-[#E5E1D6] dark:border-[#1E2F47] space-y-3.5 text-xs sm:text-sm">
             <div className="space-y-1">
-              <span className="font-semibold text-slate-800 flex items-center gap-1.5">
-                <RefreshCw className="w-3.5 h-3.5 text-amber-600" />
-                Spaced Revision Task:
+              <span className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                <RefreshCw className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                Spaced Revision Task
               </span>
-              <p className="text-slate-600 pl-5">{task.revisionTask}</p>
+              <p className="text-slate-600 dark:text-slate-300 pl-5 leading-relaxed">{task.revisionTask}</p>
             </div>
 
             <div className="space-y-1">
-              <span className="font-semibold text-slate-800 flex items-center gap-1.5">
-                <BookOpen className="w-3.5 h-3.5 text-purple-600" />
-                Practice Recommendation:
+              <span className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400" />
+                Practice Recommendation
               </span>
-              <p className="text-slate-600 pl-5">{task.practiceRecommendation}</p>
+              <p className="text-slate-600 dark:text-slate-300 pl-5 leading-relaxed">
+                {task.practiceRecommendation}
+              </p>
             </div>
 
-            {/* Student Study Notes */}
             <div className="pt-2">
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-semibold text-slate-800 flex items-center gap-1.5">
-                  <Edit3 className="w-3.5 h-3.5 text-slate-500" />
-                  Your Study Notes:
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                  <Edit3 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                  Study Notes
                 </span>
                 {!editingNotes && (
                   <button
                     type="button"
                     onClick={() => setEditingNotes(true)}
-                    className="text-xs text-purple-600 hover:text-purple-800 font-semibold cursor-pointer"
+                    className="text-xs text-teal-700 dark:text-teal-400 hover:underline font-semibold cursor-pointer"
                   >
                     {task.notes ? 'Edit notes' : '+ Add notes'}
                   </button>
@@ -180,29 +177,29 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                     value={noteText}
                     onChange={(e) => setNoteText(e.target.value)}
                     placeholder="Write quick formulas, key questions, or reminders..."
-                    className="w-full text-xs p-2.5 rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600"
+                    className="w-full text-xs p-2.5 rounded-xl border border-[#E5E1D6] dark:border-[#1E2F47] bg-[#F7F5EF] dark:bg-[#16263D] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-600/30"
                     rows={3}
                   />
                   <div className="flex gap-2 justify-end">
                     <button
                       type="button"
                       onClick={() => setEditingNotes(false)}
-                      className="px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
+                      className="px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300 hover:bg-[#EFECE3] dark:hover:bg-[#16263D] rounded-lg cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       type="button"
                       onClick={handleSaveNotes}
-                      className="px-3 py-1 text-xs bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 cursor-pointer shadow-xs"
+                      className="px-3 py-1.5 text-xs bg-teal-700 hover:bg-teal-800 text-white rounded-lg font-semibold cursor-pointer"
                     >
                       Save Notes
                     </button>
                   </div>
                 </div>
               ) : task.notes ? (
-                <p className="text-xs text-slate-600 bg-amber-50/70 p-2.5 rounded-xl border border-amber-200/60 italic">
-                  &quot;{task.notes}&quot;
+                <p className="text-xs text-slate-700 dark:text-slate-300 bg-amber-50/70 dark:bg-amber-950/20 p-2.5 rounded-xl border border-amber-200/60 dark:border-amber-800/40 italic">
+                  &ldquo;{task.notes}&rdquo;
                 </p>
               ) : null}
             </div>
@@ -210,11 +207,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         )}
 
         {/* Footer Actions */}
-        <div className="mt-3.5 pt-3 border-t border-purple-100 flex items-center justify-between text-xs">
+        <div className="mt-4 pt-3 border-t border-[#E5E1D6] dark:border-[#1E2F47] flex items-center justify-between text-xs">
           <button
             type="button"
             onClick={() => setExpanded(!expanded)}
-            className="text-slate-500 hover:text-purple-700 font-medium flex items-center gap-1 rounded px-1 cursor-pointer"
+            className="text-slate-600 dark:text-slate-400 hover:text-teal-700 dark:hover:text-teal-400 font-medium flex items-center gap-1 rounded px-1 cursor-pointer"
             aria-expanded={expanded}
           >
             {expanded ? (
@@ -232,7 +229,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             <button
               type="button"
               onClick={() => onMissedClick(task)}
-              className="text-slate-400 hover:text-rose-600 transition-colors font-medium flex items-center gap-1 rounded px-1 cursor-pointer"
+              className="text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors font-medium flex items-center gap-1 rounded px-1 cursor-pointer whitespace-nowrap"
             >
               <AlertCircle className="w-3.5 h-3.5" /> Missed session?
             </button>

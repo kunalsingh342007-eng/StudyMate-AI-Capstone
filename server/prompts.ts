@@ -19,12 +19,12 @@ Your core planning principles:
 export function buildStudyPlanUserPrompt(req: StudyPlanRequest): string {
   return `Generate a comprehensive, day-by-day study schedule for the following student:
 - Subject: ${req.subject}
-- Target Exam Date: ${req.examDate}
+- Target Exam Date: ${req.examDate}${req.learningGoal ? `\n- Learning Goal / Outcome: ${req.learningGoal}` : ''}
 - Daily Available Hours: ${req.dailyHours} hours/day
 - Student Level: ${req.level}
 - Target Topics: ${req.topics.join(', ')}
 - Weak Topics to Prioritize: ${req.weakTopics.length > 0 ? req.weakTopics.join(', ') : 'None specified (distribute evenly)'}
-- Preferred Study Days: ${req.preferredDays.join(', ')}
+- Preferred Study Days: ${req.preferredDays.join(', ')}${req.timetable ? `\n- Existing College/Work Timetable Constraints (schedule study blocks around these commitments): ${req.timetable}` : ''}
 
 Output JSON schema structure:
 {

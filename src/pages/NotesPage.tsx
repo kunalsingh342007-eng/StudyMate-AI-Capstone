@@ -7,19 +7,18 @@ import {
   Trash2,
   Edit3,
   Calendar,
-  Tag,
   BookOpen,
   Check,
   X,
-  Share2,
-  Folder,
-  Sparkles,
 } from 'lucide-react';
 import { useStorage } from '../hooks/useStorage';
+import { useToast } from '../context/ToastContext';
+import { PageHeader, StudioPanel, EmptyState } from '../components/ui/Common';
 import { StudyNote } from '../types';
 
 export const NotesPage: React.FC = () => {
-  const { notes, saveNote, deleteNote, togglePinNote, activePlan } = useStorage();
+  const { notes, saveNote, deleteNote, togglePinNote, activePlan, userProfile } = useStorage();
+  const { showToast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('All');
@@ -27,17 +26,14 @@ export const NotesPage: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
-  // Form state for editing / creating
   const [editTitle, setEditTitle] = useState('');
   const [editSubject, setEditSubject] = useState('');
   const [editTopic, setEditTopic] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editTags, setEditTags] = useState('');
 
-  // Extract unique subjects
   const subjects = ['All', ...Array.from(new Set(notes.map((n) => n.subject).filter(Boolean)))];
 
-  // Filter notes
   const filteredNotes = notes.filter((note) => {
     const matchesSubject = selectedSubject === 'All' || note.subject === selectedSubject;
     const q = searchQuery.toLowerCase().trim();
@@ -50,7 +46,6 @@ export const NotesPage: React.FC = () => {
     return matchesSubject && matchesQuery;
   });
 
-  // Sort: pinned first, then updated date
   const sortedNotes = [...filteredNotes].sort((a, b) => {
     if (a.isPinned && !b.isPinned) return -1;
     if (!a.isPinned && b.isPinned) return 1;
@@ -59,10 +54,10 @@ export const NotesPage: React.FC = () => {
 
   const handleStartCreate = () => {
     setEditTitle('');
-    setEditSubject(activePlan?.subject || 'Computer Science Core');
+    setEditSubject(activePlan?.subject || userProfile.subjects?.[0] || '');
     setEditTopic('');
     setEditContent('');
-    setEditTags('Exam, Summary');
+    setEditTags('');
     setIsCreating(true);
     setIsEditing(true);
   };
@@ -102,95 +97,103 @@ export const NotesPage: React.FC = () => {
     setActiveNote(updatedNote);
     setIsEditing(false);
     setIsCreating(false);
+    showToast(isCreating ? 'Study note created' : 'Study note updated', 'success');
   };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this study note?')) {
-      deleteNote(id);
-      if (activeNote?.id === id) {
-        const remaining = notes.filter((n) => n.id !== id);
-        setActiveNote(remaining[0] || null);
-      }
+  const handleDelete = (noteToDelete: StudyNote) => {
+    deleteNote(noteToDelete.id);
+    if (activeNote?.id === noteToDelete.id) {
+      const remaining = notes.filter((n) => n.id !== noteToDelete.id);
+      setActiveNote(remaining[0] || null);
     }
+    showToast(`Deleted "${noteToDelete.title}"`, 'info', {
+      label: 'Undo',
+      onClick: () => {
+        saveNote(noteToDelete);
+        setActiveNote(noteToDelete);
+      },
+    });
   };
+
+  const handleTogglePin = (note: StudyNote) => {
+    togglePinNote(note.id);
+    if (activeNote?.id === note.id) {
+      setActiveNote({ ...note, isPinned: !note.isPinned });
+    }
+    showToast(note.isPinned ? 'Note unpinned' : 'Note pinned to top', 'info');
+  };
+
+  const inputClass =
+    'w-full px-3.5 py-2 text-sm rounded-xl border border-[#E5E1D6] dark:border-[#1E2F47] bg-[#F7F5EF] dark:bg-[#16263D] text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-600/30';
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Top Banner / Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-purple-100/80">
-        <div>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-purple-600 font-mono">
-            KNOWLEDGE VAULT &bull; ACTIVE RECALL
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1E1B4B] tracking-tight">
-            Study Notes & Summaries
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Organize revision sheets, algorithmic diagrams, code snippets, and conceptual takeaways
-          </p>
-        </div>
+      <PageHeader
+        eyebrow="Knowledge Vault"
+        title="Study Notes & Summaries"
+        description="Organize revision sheets, conceptual takeaways, formulas, and AI explanation summaries."
+        actions={
+          <button
+            type="button"
+            onClick={handleStartCreate}
+            className="px-4 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500 text-white font-semibold text-xs sm:text-sm flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Note</span>
+          </button>
+        }
+      />
 
-        <button
-          type="button"
-          onClick={handleStartCreate}
-          className="px-4 py-2.5 rounded-2xl bg-purple-600 hover:bg-purple-700 active:scale-[0.98] text-white font-semibold text-xs sm:text-sm shadow-md shadow-purple-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Note</span>
-        </button>
-      </div>
-
-      {/* Main Split Layout: Sidebar list + Detail/Editor */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left List Column (5 cols) */}
+        {/* Left List Column */}
         <div className="lg:col-span-5 space-y-4">
-          {/* Search & Subject Filters */}
-          <div className="bg-white p-3.5 rounded-3xl border border-purple-100/80 shadow-xs space-y-3">
+          <StudioPanel className="p-3.5 space-y-3">
             <div className="relative">
-              <Search className="w-4 h-4 text-purple-600 absolute left-3.5 top-3" />
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5" aria-hidden="true" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search notes by title, tag, or content..."
-                className="w-full pl-10 pr-3.5 py-2 text-xs sm:text-sm rounded-xl border border-purple-100 bg-[#F8F7FC] text-slate-900 focus:outline-purple-600 focus:bg-white transition-all"
+                aria-label="Search study notes"
+                className="w-full pl-10 pr-3.5 py-2 text-xs sm:text-sm rounded-xl border border-[#E5E1D6] dark:border-[#1E2F47] bg-[#F7F5EF] dark:bg-[#16263D] text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-600/30"
               />
             </div>
 
-            {/* Subject pills */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
               {subjects.map((sub) => (
                 <button
                   key={sub}
                   type="button"
                   onClick={() => setSelectedSubject(sub)}
-                  className={`px-3 py-1 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                     selectedSubject === sub
-                      ? 'bg-purple-600 text-white shadow-xs'
-                      : 'bg-purple-50/70 text-purple-900 hover:bg-purple-100'
+                      ? 'bg-teal-700 text-white dark:bg-teal-600'
+                      : 'bg-[#F7F5EF] dark:bg-[#16263D] text-slate-700 dark:text-slate-300 hover:bg-[#EFECE3] dark:hover:bg-[#1E2F47]'
                   }`}
                 >
                   {sub}
                 </button>
               ))}
             </div>
-          </div>
+          </StudioPanel>
 
-          {/* Notes Cards List */}
           <div className="space-y-2.5 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
             {sortedNotes.length === 0 ? (
-              <div className="p-8 text-center bg-white rounded-3xl border border-dashed border-purple-200">
-                <FileText className="w-8 h-8 text-purple-300 mx-auto mb-2" />
-                <p className="text-sm font-semibold text-slate-700">No notes found</p>
-                <p className="text-xs text-slate-400 mt-1">Create a note or adjust search filters.</p>
-                <button
-                  type="button"
-                  onClick={handleStartCreate}
-                  className="mt-3 px-3 py-1.5 rounded-xl bg-purple-100 text-purple-700 text-xs font-semibold hover:bg-purple-200 transition-colors"
-                >
-                  + Add First Note
-                </button>
-              </div>
+              <EmptyState
+                icon={<FileText className="w-5 h-5" />}
+                title="No notes found"
+                description="Create a revision note or adjust your subject and search filters."
+                action={
+                  <button
+                    type="button"
+                    onClick={handleStartCreate}
+                    className="px-3.5 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 text-white text-xs font-semibold cursor-pointer"
+                  >
+                    + Add First Note
+                  </button>
+                }
+              />
             ) : (
               sortedNotes.map((note) => {
                 const isSelected = activeNote?.id === note.id && !isCreating;
@@ -202,28 +205,22 @@ export const NotesPage: React.FC = () => {
                       setIsEditing(false);
                       setIsCreating(false);
                     }}
-                    className={`p-4 rounded-3xl border text-left transition-all cursor-pointer relative group ${
+                    className={`p-4 rounded-2xl border text-left transition-colors cursor-pointer relative group ${
                       isSelected
-                        ? 'bg-white border-purple-500 shadow-md shadow-purple-100 ring-2 ring-purple-500/20'
-                        : 'bg-white hover:bg-purple-50/30 border-purple-100/80 shadow-2xs'
+                        ? 'bg-white dark:bg-[#0F1D32] border-teal-600 dark:border-teal-500 ring-2 ring-teal-600/15'
+                        : 'bg-white dark:bg-[#0F1D32] hover:bg-[#F7F5EF] dark:hover:bg-[#16263D] border-[#E5E1D6] dark:border-[#1E2F47]'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          {note.isPinned && (
-                            <span className="p-1 rounded-md bg-amber-50 text-amber-600">
-                              <Pin className="w-3 h-3 fill-amber-500" />
-                            </span>
-                          )}
-                          <span className="text-[11px] font-bold text-purple-700 uppercase tracking-wide truncate">
-                            {note.subject}
-                          </span>
+                        <div className="flex items-center gap-1.5 mb-1 text-[11px] font-semibold text-teal-700 dark:text-teal-400">
+                          {note.isPinned && <Pin className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />}
+                          <span className="truncate">{note.subject}</span>
                         </div>
-                        <h3 className="text-sm font-bold text-[#1E1B4B] group-hover:text-purple-700 transition-colors truncate">
+                        <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-teal-700 dark:group-hover:text-teal-400 transition-colors truncate">
                           {note.title}
                         </h3>
-                        <p className="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 mt-1 leading-relaxed">
                           {note.content.replace(/[#*`_]/g, '')}
                         </p>
                       </div>
@@ -232,34 +229,32 @@ export const NotesPage: React.FC = () => {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          togglePinNote(note.id);
+                          handleTogglePin(note);
                         }}
-                        className={`p-1.5 rounded-lg transition-colors ${
+                        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                           note.isPinned
                             ? 'text-amber-500 hover:text-slate-400'
-                            : 'text-slate-300 hover:text-amber-500 opacity-0 group-hover:opacity-100'
+                            : 'text-slate-400 hover:text-amber-500 opacity-0 group-hover:opacity-100 focus:opacity-100'
                         }`}
                         title={note.isPinned ? 'Unpin note' : 'Pin note'}
+                        aria-label={note.isPinned ? 'Unpin note' : 'Pin note'}
                       >
                         <Pin className="w-3.5 h-3.5" />
                       </button>
                     </div>
 
-                    <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-purple-50 text-[11px] text-slate-400">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
+                    <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-[#E5E1D6] dark:border-[#1E2F47] text-[11px] text-slate-500 dark:text-slate-400">
+                      <span className="flex items-center gap-1 tabular-nums">
+                        <Calendar className="w-3 h-3" aria-hidden="true" />
                         {new Date(note.updatedAt).toLocaleDateString(undefined, {
                           month: 'short',
                           day: 'numeric',
                         })}
                       </span>
 
-                      <div className="flex items-center gap-1 truncate max-w-[150px]">
+                      <div className="flex items-center gap-2 truncate max-w-[170px]">
                         {note.tags.slice(0, 2).map((tag) => (
-                          <span
-                            key={tag}
-                            className="px-1.5 py-0.5 rounded-md bg-purple-50 text-purple-700 text-[10px] font-medium truncate"
-                          >
+                          <span key={tag} className="text-slate-500 dark:text-slate-400 font-mono truncate">
                             #{tag}
                           </span>
                         ))}
@@ -272,128 +267,138 @@ export const NotesPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Detail / Editor Column (7 cols) */}
+        {/* Right Detail / Editor Column */}
         <div className="lg:col-span-7">
           {isEditing ? (
-            /* Note Editor Form */
-            <form
-              onSubmit={handleSave}
-              className="bg-white rounded-3xl p-6 border border-purple-100 shadow-sm space-y-4"
-            >
-              <div className="flex items-center justify-between pb-3 border-b border-purple-100">
-                <span className="text-xs font-bold text-purple-700 uppercase tracking-wide">
-                  {isCreating ? 'Create New Study Note' : 'Edit Study Note'}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsEditing(false);
-                    setIsCreating(false);
-                  }}
-                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+            <StudioPanel className="p-6">
+              <form onSubmit={handleSave} className="space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-[#E5E1D6] dark:border-[#1E2F47]">
+                  <span className="text-xs font-semibold text-teal-700 dark:text-teal-400 uppercase tracking-wider font-mono">
+                    {isCreating ? 'New Study Note' : 'Edit Study Note'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditing(false);
+                      setIsCreating(false);
+                    }}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
+                    aria-label="Cancel editing"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200 mb-1">
+                      Title *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      placeholder="e.g. Dynamic Programming Recurrence Patterns"
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200 mb-1">
+                      Subject
+                    </label>
+                    <input
+                      type="text"
+                      value={editSubject}
+                      onChange={(e) => setEditSubject(e.target.value)}
+                      placeholder="e.g. Computer Science"
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200 mb-1">
+                      Topic (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={editTopic}
+                      onChange={(e) => setEditTopic(e.target.value)}
+                      placeholder="e.g. Memoization & Tabulation"
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200 mb-1">
+                      Tags (Comma-separated)
+                    </label>
+                    <input
+                      type="text"
+                      value={editTags}
+                      onChange={(e) => setEditTags(e.target.value)}
+                      placeholder="e.g. Algorithms, Formulas"
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Title *</label>
-                  <input
-                    type="text"
+                  <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200 mb-1">
+                    Content *
+                  </label>
+                  <textarea
+                    rows={14}
                     required
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    placeholder="e.g. Dynamic Programming Recurrence Patterns"
-                    className="w-full px-3.5 py-2 text-sm rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600"
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    placeholder="Write your study notes, formulas, step-by-step mechanisms, or code snippets..."
+                    className={`${inputClass} font-mono leading-relaxed resize-y`}
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Subject</label>
-                  <input
-                    type="text"
-                    value={editSubject}
-                    onChange={(e) => setEditSubject(e.target.value)}
-                    placeholder="e.g. Computer Science Core"
-                    className="w-full px-3.5 py-2 text-sm rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600"
-                  />
+                <div className="flex items-center justify-end gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditing(false);
+                      setIsCreating(false);
+                    }}
+                    className="px-4 py-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-[#EFECE3] dark:hover:bg-[#16263D] text-xs font-semibold cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Save Note</span>
+                  </button>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Topic (Optional)</label>
-                  <input
-                    type="text"
-                    value={editTopic}
-                    onChange={(e) => setEditTopic(e.target.value)}
-                    placeholder="e.g. Memoization & Tabulation"
-                    className="w-full px-3.5 py-2 text-sm rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Tags (Comma-separated)</label>
-                  <input
-                    type="text"
-                    value={editTags}
-                    onChange={(e) => setEditTags(e.target.value)}
-                    placeholder="e.g. Algorithms, Exam, Formulas"
-                    className="w-full px-3.5 py-2 text-sm rounded-xl border border-purple-200 bg-white text-slate-900 focus:outline-purple-600"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Content (Markdown Supported) *</label>
-                <textarea
-                  rows={14}
-                  required
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  placeholder="Write your study notes, formulas, step-by-step mechanisms, or code snippets here..."
-                  className="w-full px-3.5 py-3 text-sm font-mono rounded-xl border border-purple-200 bg-[#FAF9FD] text-slate-900 focus:outline-purple-600 focus:bg-white leading-relaxed resize-y"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsEditing(false);
-                    setIsCreating(false);
-                  }}
-                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 text-xs font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-md shadow-purple-600/30 flex items-center gap-1.5"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                  <span>Save Note</span>
-                </button>
-              </div>
-            </form>
+              </form>
+            </StudioPanel>
           ) : activeNote ? (
-            /* Note Detail View */
-            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-purple-100 shadow-sm space-y-6">
-              {/* Header */}
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-4 border-b border-purple-100/80">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-lg bg-purple-50 text-purple-700 border border-purple-100 text-[11px] font-bold uppercase tracking-wider">
+            <StudioPanel className="p-6 sm:p-8 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-4 border-b border-[#E5E1D6] dark:border-[#1E2F47]">
+                <div className="space-y-1.5 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <span className="font-semibold text-teal-700 dark:text-teal-400">
                       {activeNote.subject}
                     </span>
                     {activeNote.topic && (
-                      <span className="text-xs text-slate-500 font-medium">
-                        &bull; {activeNote.topic}
-                      </span>
+                      <>
+                        <span aria-hidden="true" className="text-slate-400">&middot;</span>
+                        <span className="text-slate-600 dark:text-slate-400 font-medium">
+                          {activeNote.topic}
+                        </span>
+                      </>
                     )}
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-extrabold text-[#1E1B4B]">
+                  <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">
                     {activeNote.title}
                   </h2>
                 </div>
@@ -402,7 +407,7 @@ export const NotesPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleStartEdit(activeNote)}
-                    className="p-2 rounded-xl text-slate-600 hover:text-purple-700 hover:bg-purple-50 transition-colors flex items-center gap-1.5 text-xs font-semibold border border-purple-100"
+                    className="px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-[#EFECE3] dark:hover:bg-[#16263D] transition-colors flex items-center gap-1.5 text-xs font-semibold border border-[#E5E1D6] dark:border-[#1E2F47] cursor-pointer"
                     title="Edit Note"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
@@ -411,65 +416,62 @@ export const NotesPage: React.FC = () => {
 
                   <button
                     type="button"
-                    onClick={() => togglePinNote(activeNote.id)}
-                    className={`p-2 rounded-xl border border-purple-100 transition-colors ${
+                    onClick={() => handleTogglePin(activeNote)}
+                    className={`p-2 rounded-xl border border-[#E5E1D6] dark:border-[#1E2F47] transition-colors cursor-pointer ${
                       activeNote.isPinned
-                        ? 'text-amber-500 bg-amber-50'
-                        : 'text-slate-600 hover:bg-purple-50'
+                        ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30'
+                        : 'text-slate-600 dark:text-slate-300 hover:bg-[#EFECE3] dark:hover:bg-[#16263D]'
                     }`}
                     title={activeNote.isPinned ? 'Unpin' : 'Pin to top'}
+                    aria-label={activeNote.isPinned ? 'Unpin note' : 'Pin note'}
                   >
                     <Pin className="w-3.5 h-3.5" />
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => handleDelete(activeNote.id)}
-                    className="p-2 rounded-xl text-rose-500 hover:bg-rose-50 border border-rose-100 transition-colors"
+                    onClick={() => handleDelete(activeNote)}
+                    className="p-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 transition-colors cursor-pointer"
                     title="Delete Note"
+                    aria-label="Delete Note"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
 
-              {/* Tags & Metadata */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-slate-400 flex items-center gap-1 mr-2">
-                  <Calendar className="w-3.5 h-3.5" />
+              <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                <span className="flex items-center gap-1.5 tabular-nums">
+                  <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
                   Updated {new Date(activeNote.updatedAt).toLocaleDateString()}
                 </span>
+                {activeNote.tags.length > 0 && <span aria-hidden="true">&middot;</span>}
                 {activeNote.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-2.5 py-1 rounded-xl bg-[#F8F7FC] text-purple-800 text-xs font-semibold border border-purple-100"
-                  >
+                  <span key={tag} className="font-mono text-teal-700 dark:text-teal-400">
                     #{tag}
                   </span>
                 ))}
               </div>
 
-              {/* Note Content Renderer */}
-              <div className="prose prose-purple max-w-none text-slate-800 text-sm leading-relaxed space-y-4 whitespace-pre-wrap">
+              <div className="text-slate-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-wrap">
                 {activeNote.content}
               </div>
-            </div>
+            </StudioPanel>
           ) : (
-            /* Empty State */
-            <div className="bg-white rounded-3xl p-12 text-center border border-purple-100 shadow-sm space-y-3">
-              <BookOpen className="w-12 h-12 text-purple-300 mx-auto" />
-              <h3 className="text-base font-bold text-slate-800">No Note Selected</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Select a note from the list on the left or create a brand new revision sheet.
-              </p>
-              <button
-                type="button"
-                onClick={handleStartCreate}
-                className="px-4 py-2 rounded-xl bg-purple-600 text-white text-xs font-semibold hover:bg-purple-700 transition-colors"
-              >
-                + Create Note
-              </button>
-            </div>
+            <EmptyState
+              icon={<BookOpen className="w-6 h-6" />}
+              title="No Note Selected"
+              description="Select a note from the list on the left or create a brand new revision sheet."
+              action={
+                <button
+                  type="button"
+                  onClick={handleStartCreate}
+                  className="px-4 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 text-white text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  + Create Note
+                </button>
+              }
+            />
           )}
         </div>
       </div>

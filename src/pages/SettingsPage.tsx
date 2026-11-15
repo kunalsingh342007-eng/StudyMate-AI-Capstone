@@ -11,7 +11,6 @@ import {
   AlertCircle,
   Save,
   LogOut,
-  Mail,
   Trash2,
   Sun,
   Moon,
@@ -22,7 +21,9 @@ import {
   Lock,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { FirestorePreferences } from '../services/firebase/firestoreService';
+import { PageHeader, StudioPanel } from '../components/ui/Common';
 
 export const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -36,8 +37,8 @@ export const SettingsPage: React.FC = () => {
     resetPassword,
     deleteAccount,
   } = useAuth();
+  const { showToast } = useToast();
 
-  // Local form state initialized from Firestore preferences
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(preferences.theme || 'light');
   const [dailyGoalMinutes, setDailyGoalMinutes] = useState<number>(
     preferences.dailyStudyGoalMinutes || 180
@@ -55,7 +56,6 @@ export const SettingsPage: React.FC = () => {
     preferences.interfaceLanguage || 'English'
   );
 
-  // Preferred days parsing
   const ALL_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const [selectedDays, setSelectedDays] = useState<string[]>(() => {
     if (!preferences.preferredStudyDays) return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -65,25 +65,20 @@ export const SettingsPage: React.FC = () => {
       .filter((d) => ALL_DAYS.includes(d));
   });
 
-  // Account details state
   const [displayName, setDisplayName] = useState(userProfile.name || '');
   const [academicLevel, setAcademicLevel] = useState(userProfile.academicLevel || 'Undergraduate Senior');
 
-  // UI feedback states
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Password reset action feedback
   const [resetSending, setResetSending] = useState(false);
   const [resetNotice, setResetNotice] = useState<string | null>(null);
 
-  // Danger zone deletion modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmationInput, setDeleteConfirmationInput] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Sync when preferences change from external observer
   useEffect(() => {
     if (preferences) {
       setTheme(preferences.theme || 'light');
@@ -112,7 +107,7 @@ export const SettingsPage: React.FC = () => {
 
   const toggleDay = (day: string) => {
     if (selectedDays.includes(day)) {
-      if (selectedDays.length === 1) return; // Keep at least one day
+      if (selectedDays.length === 1) return;
       setSelectedDays(selectedDays.filter((d) => d !== day));
     } else {
       setSelectedDays([...selectedDays, day]);
@@ -136,10 +131,8 @@ export const SettingsPage: React.FC = () => {
         examRemindersEnabled: examReminders,
       };
 
-      // Update Firestore preferences document
       await updatePreferences(payload);
 
-      // Update display name, academic level, and daily goal hours
       if (
         displayName.trim() !== userProfile.name ||
         academicLevel !== userProfile.academicLevel ||
@@ -153,9 +146,10 @@ export const SettingsPage: React.FC = () => {
       }
 
       setSaveSuccess(true);
+      showToast('Settings saved', 'success');
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err: any) {
-      setErrorMessage(err?.message || 'Failed to save preferences to Cloud Firestore. Please retry.');
+      setErrorMessage(err?.message || 'Failed to save preferences. Please retry.');
     } finally {
       setIsSaving(false);
     }
@@ -200,84 +194,72 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
+  const inputClass =
+    'w-full px-3.5 py-2.5 text-xs sm:text-sm border border-[#E5E1D6] dark:border-[#1E2F47] rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-600/30 bg-[#F7F5EF] dark:bg-[#16263D] text-slate-900 dark:text-slate-100';
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-12 font-sans">
-      {/* Header */}
-      <div className="border-b border-purple-100/80 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-purple-600 font-mono">
-            ACCOUNT & PREFERENCES
-          </span>
-          <h1 className="text-2xl sm:text-4xl font-extrabold text-[#1E1B4B] tracking-tight mt-1">
-            Settings
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Customize your study workspace, session defaults, daily goals, and privacy options.
-          </p>
-        </div>
+    <div className="max-w-4xl mx-auto space-y-6 pb-12">
+      <PageHeader
+        eyebrow="Account & Preferences"
+        title="Settings"
+        description="Customize your studio theme, daily study targets, language, and account security."
+        actions={
+          <button
+            type="button"
+            onClick={handleSaveAll}
+            disabled={isSaving}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500 text-white text-xs sm:text-sm font-semibold transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap"
+          >
+            {isSaving ? (
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
+          </button>
+        }
+      />
 
-        <button
-          type="button"
-          onClick={handleSaveAll}
-          disabled={isSaving}
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 active:scale-[0.99] text-white text-xs sm:text-sm font-bold shadow-md shadow-purple-600/30 transition-all cursor-pointer disabled:opacity-50"
-        >
-          {isSaving ? (
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : (
-            <Save className="w-4 h-4" />
-          )}
-          <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
-        </button>
-      </div>
-
-      {/* Save Success Alert */}
       {saveSuccess && (
         <div
           role="status"
-          className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm font-semibold flex items-center gap-2.5 animate-in fade-in duration-200"
+          className="p-4 rounded-xl bg-lime-50 dark:bg-lime-950/30 border border-lime-200 dark:border-lime-900/50 text-lime-800 dark:text-lime-200 text-xs sm:text-sm font-semibold flex items-center gap-2.5"
         >
-          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-          <span>Your preferences have been saved securely to your Cloud Firestore profile.</span>
+          <CheckCircle2 className="w-5 h-5 text-lime-600 dark:text-lime-400 shrink-0" />
+          <span>Your preferences have been saved to your profile.</span>
         </div>
       )}
 
-      {/* Error Alert */}
       {errorMessage && (
         <div
           role="alert"
-          className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm font-semibold flex items-center gap-2.5 animate-in fade-in duration-200"
+          className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-800 dark:text-rose-200 text-xs sm:text-sm font-semibold flex items-center gap-2.5"
         >
-          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+          <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0" />
           <span className="flex-1">{errorMessage}</span>
           <button
             type="button"
             onClick={() => setErrorMessage(null)}
-            className="text-xs text-rose-600 hover:underline cursor-pointer"
+            className="text-xs text-rose-700 dark:text-rose-300 hover:underline cursor-pointer"
           >
             Dismiss
           </button>
         </div>
       )}
 
-      <form onSubmit={handleSaveAll} className="space-y-8">
-        {/* =========================================
-            SECTION 1: APPEARANCE
-           ========================================= */}
-        <section
-          aria-labelledby="appearance-heading"
-          className="bg-white rounded-3xl border border-purple-100/90 p-6 sm:p-7 shadow-xs space-y-5"
-        >
-          <div className="flex items-center gap-2.5 pb-2 border-b border-purple-50">
-            <div className="w-9 h-9 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600">
+      <form onSubmit={handleSaveAll} className="space-y-6">
+        {/* SECTION 1: APPEARANCE */}
+        <StudioPanel className="p-6 sm:p-7 space-y-5">
+          <div className="flex items-center gap-3 pb-3 border-b border-[#E5E1D6] dark:border-[#1E2F47]">
+            <div className="w-9 h-9 rounded-xl bg-[#F7F5EF] dark:bg-[#16263D] border border-[#E5E1D6] dark:border-[#1E2F47] flex items-center justify-center text-teal-700 dark:text-teal-400">
               <Palette className="w-5 h-5" />
             </div>
             <div>
-              <h2 id="appearance-heading" className="text-base sm:text-lg font-bold text-slate-900">
+              <h2 id="appearance-heading" className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
                 1. Appearance
               </h2>
-              <p className="text-xs text-slate-500">
-                Choose the display theme for your StudyMate AI learning workspace.
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Choose the display theme for your learning studio.
               </p>
             </div>
           </div>
@@ -286,20 +268,20 @@ export const SettingsPage: React.FC = () => {
             {[
               {
                 id: 'light',
-                title: 'Light Theme',
-                desc: 'Soft lavender canvas with deep purple accents',
+                title: 'Light Studio',
+                desc: 'Warm off-white paper canvas with restrained teal accents',
                 icon: Sun,
               },
               {
                 id: 'dark',
-                title: 'Dark Theme',
-                desc: 'Deep indigo night mode for focused evening study',
+                title: 'Dark Navy',
+                desc: 'Deep navy study studio for low-glare evening sessions',
                 icon: Moon,
               },
               {
                 id: 'system',
                 title: 'System Default',
-                desc: 'Automatically matches your OS dark/light mode',
+                desc: 'Automatically matches your OS appearance preference',
                 icon: Laptop,
               },
             ].map((item) => {
@@ -309,64 +291,66 @@ export const SettingsPage: React.FC = () => {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setTheme(item.id as any)}
-                  className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                  onClick={() => setTheme(item.id as 'light' | 'dark' | 'system')}
+                  className={`p-4 rounded-xl border text-left transition-colors cursor-pointer flex flex-col justify-between ${
                     isSelected
-                      ? 'border-purple-600 bg-purple-50/60 ring-2 ring-purple-600/20 shadow-xs'
-                      : 'border-slate-200 bg-white hover:border-purple-200 hover:bg-slate-50/50'
+                      ? 'border-teal-600 dark:border-teal-400 bg-[#F7F5EF] dark:bg-[#16263D] ring-2 ring-teal-600/20'
+                      : 'border-[#E5E1D6] dark:border-[#1E2F47] bg-white dark:bg-[#0F1D32] hover:bg-[#F7F5EF] dark:hover:bg-[#16263D]'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div
-                      className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                        isSelected ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600'
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                        isSelected
+                          ? 'bg-teal-700 text-white dark:bg-teal-600'
+                          : 'bg-[#EFECE3] dark:bg-[#16263D] text-slate-600 dark:text-slate-300'
                       }`}
                     >
                       <Icon className="w-4 h-4" />
                     </div>
                     {isSelected && (
-                      <span className="w-2.5 h-2.5 rounded-full bg-purple-600 ring-4 ring-purple-100" />
+                      <span className="text-[11px] font-semibold text-teal-700 dark:text-teal-400">
+                        Active
+                      </span>
                     )}
                   </div>
                   <div>
-                    <h3 className="text-xs sm:text-sm font-bold text-slate-900">{item.title}</h3>
-                    <p className="text-[11px] text-slate-500 mt-0.5">{item.desc}</p>
+                    <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">
+                      {item.title}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                      {item.desc}
+                    </p>
                   </div>
                 </button>
               );
             })}
           </div>
-        </section>
+        </StudioPanel>
 
-        {/* =========================================
-            SECTION 2: STUDY PREFERENCES
-           ========================================= */}
-        <section
-          aria-labelledby="study-preferences-heading"
-          className="bg-white rounded-3xl border border-purple-100/90 p-6 sm:p-7 shadow-xs space-y-5"
-        >
-          <div className="flex items-center gap-2.5 pb-2 border-b border-purple-50">
-            <div className="w-9 h-9 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600">
+        {/* SECTION 2: STUDY PREFERENCES */}
+        <StudioPanel className="p-6 sm:p-7 space-y-5">
+          <div className="flex items-center gap-3 pb-3 border-b border-[#E5E1D6] dark:border-[#1E2F47]">
+            <div className="w-9 h-9 rounded-xl bg-[#F7F5EF] dark:bg-[#16263D] border border-[#E5E1D6] dark:border-[#1E2F47] flex items-center justify-center text-teal-700 dark:text-teal-400">
               <BookOpen className="w-5 h-5" />
             </div>
             <div>
-              <h2 id="study-preferences-heading" className="text-base sm:text-lg font-bold text-slate-900">
+              <h2 id="study-preferences-heading" className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
                 2. Study Preferences
               </h2>
-              <p className="text-xs text-slate-500">
-                Configure your daily target, weekly schedule, and typical study session durations.
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Configure your daily target, weekly schedule, and session lengths.
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* Daily Study Goal */}
-            <div className="space-y-2 p-4 rounded-2xl bg-purple-50/30 border border-purple-100/80">
-              <label className="flex items-center gap-2 text-xs font-bold text-slate-900">
-                <Clock className="w-4 h-4 text-purple-600" />
+            <div className="space-y-2.5 p-4 rounded-xl bg-[#F7F5EF] dark:bg-[#16263D] border border-[#E5E1D6] dark:border-[#1E2F47]">
+              <label className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-slate-100">
+                <Clock className="w-4 h-4 text-teal-700 dark:text-teal-400" />
                 <span>Daily Study Goal</span>
               </label>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 Target minutes of dedicated learning per day.
               </p>
               <div className="flex items-center gap-3 pt-1">
@@ -377,22 +361,22 @@ export const SettingsPage: React.FC = () => {
                   step={15}
                   value={dailyGoalMinutes}
                   onChange={(e) => setDailyGoalMinutes(Number(e.target.value))}
-                  className="w-32 px-3.5 py-2 text-sm font-bold border border-purple-200 rounded-xl bg-white focus:outline-purple-600 focus:border-purple-600 text-slate-900"
+                  className="w-28 px-3 py-2 text-sm font-bold border border-[#E5E1D6] dark:border-[#1E2F47] rounded-xl bg-white dark:bg-[#0F1D32] text-slate-900 dark:text-slate-100 tabular-nums"
                 />
-                <span className="text-xs font-semibold text-slate-600">
-                  minutes ({Math.round((dailyGoalMinutes / 60) * 10) / 10} hours / day)
+                <span className="text-xs font-medium text-slate-600 dark:text-slate-300 tabular-nums">
+                  min ({Math.round((dailyGoalMinutes / 60) * 10) / 10} hrs/day)
                 </span>
               </div>
-              <div className="flex gap-1.5 pt-2">
+              <div className="flex gap-1.5 pt-1">
                 {[60, 120, 180, 240].map((mins) => (
                   <button
                     key={mins}
                     type="button"
                     onClick={() => setDailyGoalMinutes(mins)}
-                    className={`px-2.5 py-1 text-[11px] font-bold rounded-lg border cursor-pointer ${
+                    className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg border cursor-pointer tabular-nums ${
                       dailyGoalMinutes === mins
-                        ? 'bg-purple-600 text-white border-purple-600'
-                        : 'bg-white text-slate-700 border-purple-100 hover:bg-purple-50'
+                        ? 'bg-teal-700 text-white border-teal-700 dark:bg-teal-600'
+                        : 'bg-white dark:bg-[#0F1D32] text-slate-700 dark:text-slate-300 border-[#E5E1D6] dark:border-[#1E2F47]'
                     }`}
                   >
                     {mins / 60}h
@@ -401,13 +385,12 @@ export const SettingsPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Default Session Duration */}
-            <div className="space-y-2 p-4 rounded-2xl bg-purple-50/30 border border-purple-100/80">
-              <label className="flex items-center gap-2 text-xs font-bold text-slate-900">
-                <Clock className="w-4 h-4 text-purple-600" />
+            <div className="space-y-2.5 p-4 rounded-xl bg-[#F7F5EF] dark:bg-[#16263D] border border-[#E5E1D6] dark:border-[#1E2F47]">
+              <label className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-slate-100">
+                <Clock className="w-4 h-4 text-teal-700 dark:text-teal-400" />
                 <span>Default Study Session Duration</span>
               </label>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 Recommended chunk size for AI-generated study tasks.
               </p>
               <div className="grid grid-cols-2 gap-2 pt-1">
@@ -421,10 +404,10 @@ export const SettingsPage: React.FC = () => {
                     key={preset.val}
                     type="button"
                     onClick={() => setDefaultDurationMinutes(preset.val)}
-                    className={`px-3 py-2 rounded-xl text-xs font-bold border text-left cursor-pointer transition-colors ${
+                    className={`px-3 py-2 rounded-xl text-xs font-semibold border text-left cursor-pointer transition-colors ${
                       defaultDurationMinutes === preset.val
-                        ? 'bg-purple-600 text-white border-purple-600 shadow-2xs'
-                        : 'bg-white text-slate-700 border-purple-100 hover:bg-purple-50'
+                        ? 'bg-teal-700 text-white border-teal-700 dark:bg-teal-600'
+                        : 'bg-white dark:bg-[#0F1D32] text-slate-700 dark:text-slate-300 border-[#E5E1D6] dark:border-[#1E2F47]'
                     }`}
                   >
                     {preset.label}
@@ -434,13 +417,12 @@ export const SettingsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Preferred Study Days */}
           <div className="space-y-2 pt-2">
-            <label className="flex items-center gap-2 text-xs font-bold text-slate-900">
-              <Calendar className="w-4 h-4 text-purple-600" />
+            <span className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-slate-100">
+              <Calendar className="w-4 h-4 text-teal-700 dark:text-teal-400" />
               <span>Preferred Study Days</span>
-            </label>
-            <p className="text-[11px] text-slate-500">
+            </span>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
               Select days of the week when StudyMate should schedule revision tasks.
             </p>
             <div className="flex flex-wrap gap-2 pt-1">
@@ -451,10 +433,10 @@ export const SettingsPage: React.FC = () => {
                     key={day}
                     type="button"
                     onClick={() => toggleDay(day)}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
                       active
-                        ? 'bg-purple-600 text-white shadow-xs'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        ? 'bg-teal-700 text-white dark:bg-teal-600'
+                        : 'bg-[#F7F5EF] dark:bg-[#16263D] text-slate-600 dark:text-slate-300 border border-[#E5E1D6] dark:border-[#1E2F47]'
                     }`}
                   >
                     {day}
@@ -463,38 +445,32 @@ export const SettingsPage: React.FC = () => {
               })}
             </div>
           </div>
-        </section>
+        </StudioPanel>
 
-        {/* =========================================
-            SECTION 3: STUDY REMINDERS
-           ========================================= */}
-        <section
-          aria-labelledby="study-reminders-heading"
-          className="bg-white rounded-3xl border border-purple-100/90 p-6 sm:p-7 shadow-xs space-y-5"
-        >
-          <div className="flex items-center gap-2.5 pb-2 border-b border-purple-50">
-            <div className="w-9 h-9 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600">
+        {/* SECTION 3: STUDY REMINDERS */}
+        <StudioPanel className="p-6 sm:p-7 space-y-5">
+          <div className="flex items-center gap-3 pb-3 border-b border-[#E5E1D6] dark:border-[#1E2F47]">
+            <div className="w-9 h-9 rounded-xl bg-[#F7F5EF] dark:bg-[#16263D] border border-[#E5E1D6] dark:border-[#1E2F47] flex items-center justify-center text-teal-700 dark:text-teal-400">
               <Bell className="w-5 h-5" />
             </div>
             <div>
-              <h2 id="study-reminders-heading" className="text-base sm:text-lg font-bold text-slate-900">
+              <h2 id="study-reminders-heading" className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
                 3. Study Reminders
               </h2>
-              <p className="text-xs text-slate-500">
-                Control timely in-app notifications and reminder alerts.
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Control in-app notifications and exam deadline alerts.
               </p>
             </div>
           </div>
 
-          <div className="space-y-3.5">
-            {/* Daily Streak Reminders */}
-            <div className="p-4 rounded-2xl bg-purple-50/20 border border-purple-100/80 flex items-center justify-between gap-4">
+          <div className="space-y-3">
+            <div className="p-4 rounded-xl bg-[#F7F5EF] dark:bg-[#16263D] border border-[#E5E1D6] dark:border-[#1E2F47] flex items-center justify-between gap-4">
               <div className="space-y-0.5">
-                <span className="text-xs sm:text-sm font-bold text-slate-900 block">
+                <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 block">
                   Daily Study Reminders
                 </span>
-                <p className="text-[11px] text-slate-500">
-                  Notify me of scheduled tasks and active study streak milestones.
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Notify me of scheduled tasks and spaced retrieval reviews.
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer shrink-0">
@@ -504,18 +480,17 @@ export const SettingsPage: React.FC = () => {
                   onChange={(e) => setStudyReminders(e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600" />
+                <div className="w-11 h-6 bg-slate-300 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600" />
               </label>
             </div>
 
-            {/* Exam Countdown Reminders */}
-            <div className="p-4 rounded-2xl bg-purple-50/20 border border-purple-100/80 flex items-center justify-between gap-4">
+            <div className="p-4 rounded-xl bg-[#F7F5EF] dark:bg-[#16263D] border border-[#E5E1D6] dark:border-[#1E2F47] flex items-center justify-between gap-4">
               <div className="space-y-0.5">
-                <span className="text-xs sm:text-sm font-bold text-slate-900 block">
+                <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 block">
                   Exam Countdown & Review Alerts
                 </span>
-                <p className="text-[11px] text-slate-500">
-                  Send high-priority reminders as target exam dates approach (7 days, 3 days, 1 day prior).
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Send reminders as target exam dates approach (7, 3, and 1 day prior).
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer shrink-0">
@@ -525,101 +500,98 @@ export const SettingsPage: React.FC = () => {
                   onChange={(e) => setExamReminders(e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600" />
+                <div className="w-11 h-6 bg-slate-300 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600" />
               </label>
             </div>
           </div>
-        </section>
+        </StudioPanel>
 
-        {/* =========================================
-            SECTION 4: LANGUAGE
-           ========================================= */}
-        <section
-          aria-labelledby="language-heading"
-          className="bg-white rounded-3xl border border-purple-100/90 p-6 sm:p-7 shadow-xs space-y-5"
-        >
-          <div className="flex items-center gap-2.5 pb-2 border-b border-purple-50">
-            <div className="w-9 h-9 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600">
+        {/* SECTION 4: LANGUAGE */}
+        <StudioPanel className="p-6 sm:p-7 space-y-5">
+          <div className="flex items-center gap-3 pb-3 border-b border-[#E5E1D6] dark:border-[#1E2F47]">
+            <div className="w-9 h-9 rounded-xl bg-[#F7F5EF] dark:bg-[#16263D] border border-[#E5E1D6] dark:border-[#1E2F47] flex items-center justify-center text-teal-700 dark:text-teal-400">
               <Globe className="w-5 h-5" />
             </div>
             <div>
-              <h2 id="language-heading" className="text-base sm:text-lg font-bold text-slate-900">
+              <h2 id="language-heading" className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
                 4. Interface Language
               </h2>
-              <p className="text-xs text-slate-500">
-                Choose the primary language for AI explanations, study schedules, and UI elements.
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Choose the primary language for AI explanations and study schedules.
               </p>
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="block text-xs font-bold text-slate-700">Supported Languages</label>
+            <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+              Supported Languages
+            </label>
             <select
               value={interfaceLanguage}
               onChange={(e) => setInterfaceLanguage(e.target.value)}
-              className="w-full sm:w-80 px-3.5 py-2.5 text-xs sm:text-sm border border-purple-200 rounded-xl focus:outline-purple-600 focus:border-purple-600 bg-white text-slate-900"
+              className={`${inputClass} sm:w-80`}
             >
-              <option value="English">English (United States / Global) — Fully Supported</option>
-              <option value="Spanish">Español (Spanish) — Explanations Supported</option>
-              <option value="French">Français (French) — Explanations Supported</option>
-              <option value="German">Deutsch (German) — Explanations Supported</option>
+              <option value="English">English (United States / Global)</option>
+              <option value="Spanish">Español (Spanish)</option>
+              <option value="French">Français (French)</option>
+              <option value="German">Deutsch (German)</option>
             </select>
-            <p className="text-[11px] text-slate-500">
-              Explanations and quizzes will be generated in {interfaceLanguage} by Google Gemini.
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              AI explanations and practice quizzes will respond in {interfaceLanguage}.
             </p>
           </div>
-        </section>
+        </StudioPanel>
 
-        {/* =========================================
-            SECTION 5: ACCOUNT & PRIVACY
-           ========================================= */}
-        <section
-          aria-labelledby="account-heading"
-          className="bg-white rounded-3xl border border-purple-100/90 p-6 sm:p-7 shadow-xs space-y-5"
-        >
-          <div className="flex items-center gap-2.5 pb-2 border-b border-purple-50">
-            <div className="w-9 h-9 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600">
+        {/* SECTION 5: ACCOUNT & PRIVACY */}
+        <StudioPanel className="p-6 sm:p-7 space-y-5">
+          <div className="flex items-center gap-3 pb-3 border-b border-[#E5E1D6] dark:border-[#1E2F47]">
+            <div className="w-9 h-9 rounded-xl bg-[#F7F5EF] dark:bg-[#16263D] border border-[#E5E1D6] dark:border-[#1E2F47] flex items-center justify-center text-teal-700 dark:text-teal-400">
               <UserCheck className="w-5 h-5" />
             </div>
             <div>
-              <h2 id="account-heading" className="text-base sm:text-lg font-bold text-slate-900">
+              <h2 id="account-heading" className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
                 5. Account & Privacy
               </h2>
-              <p className="text-xs text-slate-500">
-                Manage your credentials, password reset, and account security.
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Manage your profile details, password reset, and account security.
               </p>
             </div>
           </div>
 
-          {/* Account Details */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="block text-xs font-bold text-slate-700">Display Name</label>
+              <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+                Display Name
+              </label>
               <input
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-purple-200 rounded-xl focus:outline-purple-600 focus:border-purple-600 bg-white text-slate-900"
+                className={inputClass}
               />
             </div>
 
             <div className="space-y-1">
-              <label className="block text-xs font-bold text-slate-700">Account Email</label>
+              <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+                Account Email
+              </label>
               <input
                 type="email"
                 disabled
-                value={currentUser?.email || userProfile.email || 'alex.rivera@university.edu'}
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl bg-slate-50 text-slate-500 cursor-not-allowed"
+                value={currentUser?.email || userProfile.email || 'Not signed in'}
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-[#E5E1D6] dark:border-[#1E2F47] rounded-xl bg-[#EFECE3]/60 dark:bg-[#0A1628] text-slate-500 dark:text-slate-400 cursor-not-allowed"
               />
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="block text-xs font-bold text-slate-700">Academic Standing</label>
+            <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+              Academic Standing
+            </label>
             <select
               value={academicLevel}
               onChange={(e) => setAcademicLevel(e.target.value)}
-              className="w-full sm:w-80 px-3.5 py-2.5 text-xs sm:text-sm border border-purple-200 rounded-xl focus:outline-purple-600 focus:border-purple-600 bg-white text-slate-900"
+              className={`${inputClass} sm:w-80`}
             >
               <option value="Undergraduate Freshman">Undergraduate Freshman</option>
               <option value="Undergraduate Sophomore">Undergraduate Sophomore</option>
@@ -630,76 +602,71 @@ export const SettingsPage: React.FC = () => {
             </select>
           </div>
 
-          {/* Account Status Badge */}
-          <div className="p-3.5 rounded-2xl bg-purple-50/50 border border-purple-100 flex items-center justify-between text-xs">
+          <div className="p-3.5 rounded-xl bg-[#F7F5EF] dark:bg-[#16263D] border border-[#E5E1D6] dark:border-[#1E2F47] flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-purple-600" />
-              <span className="font-semibold text-slate-800">
-                {currentUser ? 'Authenticated with Firebase' : 'Guest Account'}
+              <Sparkles className="w-4 h-4 text-teal-700 dark:text-teal-400" />
+              <span className="font-semibold text-slate-800 dark:text-slate-200">
+                {currentUser ? 'Authenticated with Firebase' : 'Local Browser Session'}
               </span>
             </div>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-200 text-purple-800">
+            <span className="font-mono text-[11px] font-semibold text-teal-700 dark:text-teal-400">
               {currentUser ? 'Cloud Synced' : 'Local Storage'}
             </span>
           </div>
 
-          {/* Password Reset Notice */}
           {resetNotice && (
-            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <div className="p-3 rounded-xl bg-lime-50 dark:bg-lime-950/30 border border-lime-200 dark:border-lime-900/50 text-lime-800 dark:text-lime-200 text-xs font-semibold flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-lime-600 dark:text-lime-400 shrink-0" />
               <span>{resetNotice}</span>
             </div>
           )}
 
-          {/* Account Actions: Reset Password & Logout */}
           <div className="pt-2 flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={handleSendPasswordReset}
               disabled={resetSending}
-              className="px-4 py-2.5 rounded-xl border border-purple-200 hover:bg-purple-50 text-purple-700 text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+              className="px-4 py-2.5 rounded-xl border border-[#E5E1D6] dark:border-[#1E2F47] hover:bg-[#EFECE3] dark:hover:bg-[#16263D] text-teal-700 dark:text-teal-400 text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
             >
-              <Lock className="w-3.5 h-3.5 text-purple-600" />
+              <Lock className="w-3.5 h-3.5" />
               <span>{resetSending ? 'Sending Link...' : 'Send Password Reset Email'}</span>
             </button>
 
             <button
               type="button"
               onClick={handleLogout}
-              className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-4 py-2.5 rounded-xl border border-[#E5E1D6] dark:border-[#1E2F47] hover:bg-[#EFECE3] dark:hover:bg-[#16263D] text-slate-700 dark:text-slate-200 text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
             >
-              <LogOut className="w-3.5 h-3.5 text-slate-600" />
+              <LogOut className="w-3.5 h-3.5" />
               <span>Sign Out</span>
             </button>
           </div>
 
-          {/* Safe Account Deletion Area */}
-          <div className="mt-6 pt-5 border-t border-rose-100/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="mt-6 pt-5 border-t border-rose-200 dark:border-rose-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-0.5">
-              <span className="text-xs font-bold text-rose-900 block flex items-center gap-1.5">
-                <ShieldAlert className="w-4 h-4 text-rose-600" />
+              <span className="text-xs font-bold text-rose-800 dark:text-rose-300 flex items-center gap-1.5">
+                <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400" />
                 <span>Delete Account & Study Data</span>
               </span>
-              <p className="text-[11px] text-slate-500">
-                Permanently delete your Firebase authentication user profile and preferences.
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Permanently remove your Firebase user profile and stored preferences.
               </p>
             </div>
             <button
               type="button"
               onClick={() => setShowDeleteModal(true)}
-              className="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-colors cursor-pointer shrink-0"
+              className="px-4 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 text-xs font-semibold transition-colors cursor-pointer shrink-0"
             >
               Delete Account
             </button>
           </div>
-        </section>
+        </StudioPanel>
 
-        {/* Floating Bottom Save Bar for Mobile/Easy access */}
         <div className="flex justify-end pt-2">
           <button
             type="submit"
             disabled={isSaving}
-            className="px-7 py-3 rounded-2xl bg-purple-600 hover:bg-purple-700 active:scale-[0.99] text-white text-sm font-bold shadow-lg shadow-purple-600/30 transition-all cursor-pointer disabled:opacity-50 inline-flex items-center gap-2"
+            className="px-7 py-3 rounded-xl bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500 text-white text-sm font-semibold transition-colors cursor-pointer disabled:opacity-50 inline-flex items-center gap-2"
           >
             {isSaving ? (
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -711,42 +678,42 @@ export const SettingsPage: React.FC = () => {
         </div>
       </form>
 
-      {/* Account Deletion Confirmation Modal */}
       {showDeleteModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs"
           role="dialog"
           aria-modal="true"
           aria-labelledby="delete-account-title"
         >
-          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-rose-100 p-6 space-y-4">
-            <div className="flex items-center gap-3 text-rose-600">
-              <div className="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center">
+          <div className="bg-white dark:bg-[#0F1D32] rounded-2xl max-w-md w-full shadow-2xl border border-rose-200 dark:border-rose-900/60 p-6 space-y-4">
+            <div className="flex items-center gap-3 text-rose-600 dark:text-rose-400">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 flex items-center justify-center">
                 <Trash2 className="w-5 h-5" />
               </div>
               <div>
-                <h3 id="delete-account-title" className="text-base font-bold text-slate-900">
+                <h3 id="delete-account-title" className="text-base font-bold text-slate-900 dark:text-slate-100">
                   Delete Account Confirmation
                 </h3>
-                <p className="text-xs text-rose-600 font-medium">This action cannot be undone.</p>
+                <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">
+                  This action cannot be undone.
+                </p>
               </div>
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Are you sure you want to delete your account? All your student profile information,
-              preferences, and study configurations will be permanently removed.
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              Are you sure you want to delete your account? All profile details, preferences, and study configurations will be permanently removed.
             </p>
 
             <div className="space-y-1.5 pt-1">
-              <label className="block text-xs font-bold text-slate-700">
-                Type <span className="font-mono text-rose-600">DELETE</span> to confirm:
+              <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+                Type <span className="font-mono text-rose-600 dark:text-rose-400">DELETE</span> to confirm:
               </label>
               <input
                 type="text"
                 value={deleteConfirmationInput}
                 onChange={(e) => setDeleteConfirmationInput(e.target.value)}
                 placeholder="DELETE"
-                className="w-full px-3.5 py-2 text-xs border border-rose-200 rounded-xl focus:outline-rose-600 bg-white font-mono text-slate-900"
+                className="w-full px-3.5 py-2 text-xs border border-rose-200 dark:border-rose-900/60 rounded-xl bg-[#F7F5EF] dark:bg-[#16263D] font-mono text-slate-900 dark:text-slate-100"
               />
             </div>
 
@@ -757,7 +724,7 @@ export const SettingsPage: React.FC = () => {
                   setShowDeleteModal(false);
                   setDeleteConfirmationInput('');
                 }}
-                className="flex-1 py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                className="flex-1 py-2.5 px-3 bg-[#EFECE3] dark:bg-[#16263D] hover:bg-[#E5E1D6] dark:hover:bg-[#1E2F47] text-slate-800 dark:text-slate-100 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -765,7 +732,7 @@ export const SettingsPage: React.FC = () => {
                 type="button"
                 disabled={deleteConfirmationInput !== 'DELETE' || isDeleting}
                 onClick={handleDeleteAccount}
-                className="flex-1 py-2.5 px-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-colors shadow-xs cursor-pointer disabled:opacity-50"
+                className="flex-1 py-2.5 px-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
               >
                 {isDeleting ? 'Deleting...' : 'Permanently Delete'}
               </button>

@@ -3,6 +3,7 @@ import { Sidebar } from './Sidebar';
 import { AppHeader } from './AppHeader';
 import { GlobalSearchModal } from '../common/GlobalSearchModal';
 import { AuthModal } from '../auth/AuthModal';
+import { useAuth } from '../../context/AuthContext';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -12,6 +13,22 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const { preferences } = useAuth();
+
+  // Sync accessibility preference classes to root HTML
+  useEffect(() => {
+    const root = document.documentElement;
+    if (preferences.reducedMotion) {
+      root.classList.add('reduced-motion');
+    } else {
+      root.classList.remove('reduced-motion');
+    }
+    if (preferences.highContrast) {
+      root.classList.add('high-contrast');
+    } else {
+      root.classList.remove('high-contrast');
+    }
+  }, [preferences.reducedMotion, preferences.highContrast]);
 
   // Global Cmd+K / Ctrl+K keyboard shortcut listener
   useEffect(() => {
@@ -19,6 +36,9 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setSearchModalOpen((prev) => !prev);
+      } else if (e.key === 'Escape') {
+        setSearchModalOpen(false);
+        setMobileMenuOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -26,7 +46,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   }, []);
 
   return (
-    <div className="flex h-screen bg-[#F8F7FC] dark:bg-[#0B1220] text-[#1E1B4B] dark:text-[#F8FAFC] overflow-hidden font-sans transition-colors duration-150">
+    <div className="flex h-screen bg-[#F7F5EF] dark:bg-[#0A1628] text-slate-900 dark:text-slate-100 overflow-hidden font-sans transition-colors duration-150">
       {/* Desktop Sidebar */}
       <div className="hidden lg:flex shrink-0 h-full">
         <Sidebar onOpenAuthModal={() => setAuthModalOpen(true)} />
@@ -36,7 +56,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex">
           <div
-            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-slate-950/70 transition-opacity"
             onClick={() => setMobileMenuOpen(false)}
           />
           <div className="relative z-50 flex-1 max-w-xs w-full">

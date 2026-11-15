@@ -41,13 +41,14 @@ const STORAGE_KEYS = {
   TUTOR_CHAT: 'studymate_tutor_chat',
   NOTES: 'studymate_notes',
   USER_PROFILE: 'studymate_user_profile',
+  PROFILE_AVATAR: 'studymate_profile_avatar',
 };
 
 const DEFAULT_PREFERENCES: UserPreferences = {
   userName: 'Student',
-  targetExamName: 'Semester Finals / Tech Certification',
-  targetExamDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-  dailyGoalHours: 3,
+  targetExamName: '',
+  targetExamDate: '',
+  dailyGoalHours: 2,
   highContrast: false,
   reducedMotion: false,
   fontSize: 'normal',
@@ -56,8 +57,8 @@ const DEFAULT_PREFERENCES: UserPreferences = {
 
 const DEFAULT_PROGRESS: StudyProgress = {
   totalHoursStudied: 0,
-  streakDays: 1,
-  lastStudyDate: new Date().toISOString().split('T')[0],
+  streakDays: 0,
+  lastStudyDate: '',
   completedTasksCount: 0,
   totalTasksCount: 0,
   quizzesTaken: 0,
@@ -68,17 +69,44 @@ const DEFAULT_PROGRESS: StudyProgress = {
 
 const DEFAULT_USER_PROFILE: UserProfile = {
   id: 'user-default',
-  name: 'Alex Rivera',
-  email: 'alex.rivera@university.edu',
-  academicLevel: 'Undergraduate Senior',
-  institution: 'School of Computer Science & Engineering',
-  targetExam: 'Semester Finals / Tech Exam',
-  targetExamDate: new Date(Date.now() + 18 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-  bio: 'Computer Science senior focused on systems architecture, algorithm mastery, and operating systems.',
-  dailyGoalHours: 3,
-  streakDays: 7,
-  totalStudyMinutes: 1590,
-  quizzesCompleted: 14,
+  name: 'Student',
+  preferredName: '',
+  email: '',
+  avatarUrl: undefined,
+  avatarRemoved: false,
+  city: '',
+  state: '',
+  country: '',
+  academicLevel: '',
+  institution: '',
+  degree: '',
+  branch: '',
+  currentYear: '',
+  currentSemester: '',
+  careerInterest: '',
+  targetExam: '',
+  targetExamDate: '',
+  upcomingExams: [],
+  bio: '',
+  dailyGoalHours: 0,
+  streakDays: 0,
+  totalStudyMinutes: 0,
+  quizzesCompleted: 0,
+  onboardingCompleted: false,
+  onboardingStep: 0,
+  subjects: [],
+  learningGoal: '',
+  weakTopics: [],
+  timetable: '',
+  preferredStudyDays: [],
+  preferredStudyTime: '',
+  semesterResults: [],
+  goals: [],
+  skills: [],
+  projects: [],
+  certifications: [],
+  experiences: [],
+  socialLinks: {},
 };
 
 const SEED_NOTES: StudyNote[] = [
@@ -168,14 +196,7 @@ function getScopedKey(baseKey: string): string {
 function getItem(baseKey: string): string | null {
   try {
     if (typeof localStorage === 'undefined') return null;
-    const scopedVal = localStorage.getItem(getScopedKey(baseKey));
-    if (scopedVal !== null) return scopedVal;
-    // Backward compatibility: If no scoped data exists, check if legacy unscoped data exists
-    // for guest or if this is the first run
-    if (!activeUserId) {
-      return localStorage.getItem(baseKey);
-    }
-    return null;
+    return localStorage.getItem(getScopedKey(baseKey));
   } catch {
     return null;
   }
@@ -311,6 +332,100 @@ export const StorageService = {
     } catch (e) {
       console.error('Failed to delete plan', e);
     }
+  },
+
+  replaceSavedPlans(plans: StudyPlan[]): void {
+    try {
+      setItem(STORAGE_KEYS.SAVED_PLANS, JSON.stringify(plans));
+      const active = this.getActivePlan();
+      if (plans.length > 0 && (!active || !plans.some((p) => p.id === active.id))) {
+        setItem(STORAGE_KEYS.ACTIVE_PLAN, JSON.stringify(plans[0]));
+      } else if (plans.length === 0) {
+        removeItem(STORAGE_KEYS.ACTIVE_PLAN);
+      }
+      this.recalculateProgress();
+      notifyChange();
+    } catch (e) {
+      console.error('Failed to replace saved plans', e);
+    }
+  },
+
+  addTaskToActivePlan(taskInput: {
+    topic: string;
+    subtopic?: string;
+    date?: string;
+    durationMinutes?: number;
+    priority?: 'High' | 'Medium' | 'Low';
+    learningObjective?: string;
+    subjectName?: string;
+  }): StudyPlan {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const targetDate = taskInput.date || todayStr;
+    const weekdayName = (() => {
+      const parsed = new Date(`${targetDate}T12:00:00`);
+      return Number.isNaN(parsed.getTime())
+        ? 'Today'
+        : parsed.toLocaleDateString(undefined, { weekday: 'long' });
+    })();
+
+    const newTask: StudyTask = {
+      id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      date: targetDate,
+      day: targetDate === todayStr ? `Today (${weekdayName})` : weekdayName,
+      topic: taskInput.topic.trim(),
+      subtopic: (taskInput.subtopic || 'Focused study session').trim(),
+      durationMinutes: Math.max(10, Math.min(360, Number(taskInput.durationMinutes) || 45)),
+      priority: taskInput.priority || 'Medium',
+      difficulty: 'Intermediate',
+      learningObjective: (taskInput.learningObjective || `Review and practice ${taskInput.topic.trim()}`).trim(),
+      revisionTask: 'Summarize key concepts in your own words at the end of the session.',
+      practiceRecommendation: 'Complete active recall questions after reviewing.',
+      status: 'pending',
+    };
+
+    const existing = this.getActivePlan();
+    if (existing) {
+      const updatedTopics = existing.topics.includes(newTask.topic)
+        ? existing.topics
+        : [...existing.topics, newTask.topic];
+      const updatedTasks = [...existing.tasks, newTask];
+      const totalStudyHours = Math.round((updatedTasks.reduce((sum, t) => sum + t.durationMinutes, 0) / 60) * 10) / 10;
+      const updatedPlan: StudyPlan = {
+        ...existing,
+        topics: updatedTopics,
+        tasks: updatedTasks,
+        totalStudyHours,
+      };
+      this.setActivePlan(updatedPlan);
+      return updatedPlan;
+    }
+
+    const profile = this.getUserProfile();
+    const subjectName =
+      taskInput.subjectName?.trim() ||
+      profile.subjects?.[0] ||
+      newTask.topic;
+    const newPlan: StudyPlan = {
+      id: `plan-manual-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      subject: subjectName,
+      examDate: profile.targetExamDate || new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+      dailyHours: profile.dailyGoalHours || Math.round((newTask.durationMinutes / 60) * 10) / 10,
+      level: 'Intermediate',
+      topics: [newTask.topic],
+      weakTopics: profile.weakTopics || [],
+      preferredDays:
+        profile.preferredStudyDays && profile.preferredStudyDays.length > 0
+          ? profile.preferredStudyDays
+          : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+      tasks: [newTask],
+      totalDays: 1,
+      totalStudyHours: Math.round((newTask.durationMinutes / 60) * 10) / 10,
+      assumptions: ['Created directly by student.'],
+      isManual: true,
+    };
+    this.setActivePlan(newPlan);
+    return newPlan;
   },
 
   // --- Task Updates ---
@@ -717,6 +832,7 @@ export const StorageService = {
   recalculateProgress(): StudyProgress {
     const activePlan = this.getActivePlan();
     const quizHistory = this.getQuizHistory();
+    const studySessions = this.getStudySessions();
     const todayStr = new Date().toISOString().split('T')[0];
 
     let totalCompletedHours = 0;
@@ -732,6 +848,12 @@ export const StorageService = {
         }
       });
     }
+
+    // Include standalone study sessions not already tied to a completed task
+    const standaloneSessionHours = studySessions
+      .filter((s) => !s.taskId)
+      .reduce((sum, s) => sum + s.actualMinutes / 60, 0);
+    totalCompletedHours += standaloneSessionHours;
 
     // Quiz statistics
     const quizzesTaken = quizHistory.length;
@@ -770,26 +892,32 @@ export const StorageService = {
       }
     })();
 
-    // Streak calculation
-    let streak = currentProg.streakDays || 1;
-    if (currentProg.lastStudyDate && currentProg.lastStudyDate !== todayStr) {
-      const lastDate = new Date(currentProg.lastStudyDate);
-      const todayDate = new Date(todayStr);
-      const diffDays = Math.floor((todayDate.getTime() - lastDate.getTime()) / (1000 * 3600 * 24));
-      if (diffDays === 1) {
-        // Continuous streak
-        if (completedCount > (currentProg.completedTasksCount || 0)) {
-          streak += 1;
+    const hasAnyActivity = completedCount > 0 || quizzesTaken > 0 || studySessions.length > 0;
+
+    // Truthful streak calculation: 0 until real study activity is recorded
+    let streak = 0;
+    let lastStudyDate = '';
+    if (hasAnyActivity) {
+      streak = currentProg.streakDays > 0 ? currentProg.streakDays : 1;
+      lastStudyDate = todayStr;
+      if (currentProg.lastStudyDate && currentProg.lastStudyDate !== todayStr) {
+        const lastDate = new Date(currentProg.lastStudyDate);
+        const todayDate = new Date(todayStr);
+        const diffDays = Math.floor((todayDate.getTime() - lastDate.getTime()) / (1000 * 3600 * 24));
+        if (diffDays === 1) {
+          if (completedCount > (currentProg.completedTasksCount || 0) || quizzesTaken > (currentProg.quizzesTaken || 0)) {
+            streak += 1;
+          }
+        } else if (diffDays > 1) {
+          streak = 1;
         }
-      } else if (diffDays > 1) {
-        streak = 1;
       }
     }
 
     const newProgress: StudyProgress = {
       totalHoursStudied: Math.round(totalCompletedHours * 10) / 10,
       streakDays: streak,
-      lastStudyDate: todayStr,
+      lastStudyDate,
       completedTasksCount: completedCount,
       totalTasksCount: totalCount,
       quizzesTaken,
@@ -1414,13 +1542,9 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
   getNotes(): StudyNote[] {
     try {
       const data = getItem(STORAGE_KEYS.NOTES);
-      if (data) {
-        return JSON.parse(data);
-      }
-      // Authenticated students start with fresh notes collection; unauthenticated guests can see sample notes
-      return activeUserId ? [] : SEED_NOTES;
+      return data ? JSON.parse(data) : [];
     } catch (e) {
-      return activeUserId ? [] : SEED_NOTES;
+      return [];
     }
   },
 
@@ -1466,10 +1590,22 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
   getUserProfile(): UserProfile {
     try {
       const data = getItem(STORAGE_KEYS.USER_PROFILE);
+      const avatar = getItem(STORAGE_KEYS.PROFILE_AVATAR);
       if (data) {
-        return JSON.parse(data);
+        const parsed = JSON.parse(data) as Partial<UserProfile>;
+        const merged: UserProfile = {
+          ...DEFAULT_USER_PROFILE,
+          ...parsed,
+        };
+        if (avatar && !merged.avatarRemoved) {
+          merged.avatarUrl = avatar;
+        }
+        return merged;
       }
-      return DEFAULT_USER_PROFILE;
+      return {
+        ...DEFAULT_USER_PROFILE,
+        ...(avatar ? { avatarUrl: avatar } : {}),
+      };
     } catch (e) {
       return DEFAULT_USER_PROFILE;
     }
@@ -1478,13 +1614,60 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
   saveUserProfile(profile: Partial<UserProfile>): UserProfile {
     try {
       const current = this.getUserProfile();
-      const updated: UserProfile = { ...current, ...profile };
+      const definedPatch: Partial<UserProfile> = {};
+      (Object.keys(profile) as (keyof UserProfile)[]).forEach((key) => {
+        if (profile[key] !== undefined) {
+          (definedPatch as Record<string, unknown>)[key] = profile[key];
+        }
+      });
+      const updated: UserProfile = { ...current, ...definedPatch };
       setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(updated));
       notifyChange();
       return updated;
     } catch (e) {
       console.error('Failed to save user profile', e);
       return DEFAULT_USER_PROFILE;
+    }
+  },
+
+  getProfileAvatar(): string | null {
+    try {
+      return getItem(STORAGE_KEYS.PROFILE_AVATAR);
+    } catch {
+      return null;
+    }
+  },
+
+  saveProfileAvatar(dataUrl: string): void {
+    try {
+      setItem(STORAGE_KEYS.PROFILE_AVATAR, dataUrl);
+      const current = this.getUserProfile();
+      const updated: UserProfile = {
+        ...current,
+        avatarUrl: dataUrl,
+        avatarRemoved: false,
+      };
+      setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(updated));
+      notifyChange();
+    } catch (e) {
+      console.error('Failed to save profile avatar', e);
+      throw new Error('Could not store profile picture in browser storage.');
+    }
+  },
+
+  removeProfileAvatar(): void {
+    try {
+      removeItem(STORAGE_KEYS.PROFILE_AVATAR);
+      const current = this.getUserProfile();
+      const updated: UserProfile = {
+        ...current,
+        avatarUrl: undefined,
+        avatarRemoved: true,
+      };
+      setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(updated));
+      notifyChange();
+    } catch (e) {
+      console.error('Failed to remove profile avatar', e);
     }
   },
 
@@ -1526,6 +1709,7 @@ Peterson's Solution achieves mutual exclusion for 2 processes using flag array a
       if (data.TUTOR_CHAT) setItem(STORAGE_KEYS.TUTOR_CHAT, JSON.stringify(data.TUTOR_CHAT));
       if (data.NOTES) setItem(STORAGE_KEYS.NOTES, JSON.stringify(data.NOTES));
       if (data.USER_PROFILE) setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(data.USER_PROFILE));
+      if (typeof data.PROFILE_AVATAR === 'string') setItem(STORAGE_KEYS.PROFILE_AVATAR, data.PROFILE_AVATAR);
       this.recalculateProgress();
       notifyChange();
       return true;

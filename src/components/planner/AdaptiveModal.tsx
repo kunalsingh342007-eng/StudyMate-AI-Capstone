@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Sparkles, AlertTriangle, ArrowRight, Check, Clock, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Sparkles, AlertTriangle, Check, RefreshCw } from 'lucide-react';
 import { StudyTask, StudyPlan, AdaptedPlanResponse } from '../../types';
 import { ApiClient } from '../../services/api/apiClient';
 
@@ -24,6 +24,15 @@ export const AdaptiveModal: React.FC<AdaptiveModalProps> = ({
   const [isAdapting, setIsAdapting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [adaptedPreview, setAdaptedPreview] = useState<AdaptedPlanResponse | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -66,17 +75,20 @@ export const AdaptiveModal: React.FC<AdaptiveModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/65 backdrop-blur-xs flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="adaptive-modal-title"
+      onClick={onClose}
     >
-      <div className="bg-white rounded-2xl max-w-xl w-full p-6 sm:p-7 shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in-95 duration-150">
-        {/* Close Button */}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white dark:bg-[#0F1D32] rounded-2xl max-w-xl w-full p-6 sm:p-7 shadow-2xl border border-[#E5E1D6] dark:border-[#1E2F47] relative text-slate-900 dark:text-slate-100"
+      >
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1.5 rounded-lg focus-visible:outline-2 focus-visible:outline-indigo-600"
+          className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1.5 rounded-lg cursor-pointer"
           aria-label="Close adaptive modal"
         >
           <X className="w-5 h-5" />
@@ -84,44 +96,43 @@ export const AdaptiveModal: React.FC<AdaptiveModalProps> = ({
 
         {!adaptedPreview ? (
           <div className="space-y-5">
-            {/* Header */}
             <div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 mb-2">
+              <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 dark:text-rose-400 mb-1.5">
                 <AlertTriangle className="w-3.5 h-3.5" />
-                Adaptive Recovery Assistant
+                <span>Adaptive Recovery Assistant</span>
               </div>
-              <h2 id="adaptive-modal-title" className="text-xl font-bold text-slate-900">
+              <h2 id="adaptive-modal-title" className="text-xl font-bold text-slate-900 dark:text-slate-100">
                 Missed Session Recovery
               </h2>
-              <p className="text-xs sm:text-sm text-slate-600 mt-1">
-                Life happens! Tell StudyMate AI what happened and how much extra time you have. We'll redistribute{' '}
-                <strong className="text-slate-900 font-semibold">{task.topic}</strong> without overloading you.
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
+                Tell StudyMate AI what happened and how much extra time you can allocate. We will redistribute{' '}
+                <strong className="text-slate-900 dark:text-slate-100 font-semibold">{task.topic}</strong> without overloading your days.
               </p>
             </div>
 
-            {/* Target Task Summary */}
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm">
-              <span className="text-slate-500 font-medium block mb-0.5">Missed Task:</span>
-              <div className="font-semibold text-slate-900">{task.topic} — {task.subtopic}</div>
-              <div className="text-xs text-slate-500 mt-1 flex items-center gap-2">
+            <div className="p-3.5 rounded-xl bg-[#F7F5EF] dark:bg-[#16263D] border border-[#E5E1D6] dark:border-[#1E2F47] text-xs sm:text-sm">
+              <span className="text-slate-500 dark:text-slate-400 font-medium block mb-0.5">Missed Task</span>
+              <div className="font-semibold text-slate-900 dark:text-slate-100">
+                {task.topic} — {task.subtopic}
+              </div>
+              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 tabular-nums">
                 <span>{task.durationMinutes} min</span>
-                <span>&bull;</span>
+                <span aria-hidden="true">&middot;</span>
                 <span>{task.priority} Priority</span>
-                <span>&bull;</span>
+                <span aria-hidden="true">&middot;</span>
                 <span>{task.day}</span>
               </div>
             </div>
 
-            {/* Reason Selection */}
             <div className="space-y-2">
-              <label htmlFor="miss-reason" className="block text-xs font-semibold text-slate-900">
+              <label htmlFor="miss-reason" className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
                 Why was this session missed?
               </label>
               <select
                 id="miss-reason"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                className="w-full text-sm p-2.5 rounded-lg border border-slate-300 bg-white focus:outline-indigo-600 focus:border-indigo-600"
+                className="w-full text-sm p-2.5 rounded-xl border border-[#E5E1D6] dark:border-[#1E2F47] bg-[#F7F5EF] dark:bg-[#16263D] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-600/30"
               >
                 {standardReasons.map((r) => (
                   <option key={r} value={r}>
@@ -136,52 +147,52 @@ export const AdaptiveModal: React.FC<AdaptiveModalProps> = ({
                   value={customReason}
                   onChange={(e) => setCustomReason(e.target.value)}
                   placeholder="Describe reason briefly..."
-                  className="w-full text-sm p-2.5 rounded-lg border border-slate-300 focus:outline-indigo-600"
+                  className="w-full text-sm p-2.5 rounded-xl border border-[#E5E1D6] dark:border-[#1E2F47] bg-[#F7F5EF] dark:bg-[#16263D] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-600/30"
                   aria-label="Custom missed session reason"
                 />
               )}
             </div>
 
-            {/* Extra Time Availability */}
             <div className="space-y-2">
-              <label className="block text-xs font-semibold text-slate-900">
+              <span className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
                 Can you add any extra study minutes over upcoming days?
-              </label>
+              </span>
               <div className="grid grid-cols-4 gap-2">
                 {[0, 15, 30, 60].map((mins) => (
                   <button
                     key={mins}
                     type="button"
                     onClick={() => setExtraMinutes(mins)}
-                    className={`py-2 px-3 text-xs font-semibold rounded-lg border text-center transition-colors focus-visible:outline-2 focus-visible:outline-indigo-600 ${
+                    className={`py-2 px-2 text-xs font-semibold rounded-lg border text-center transition-colors cursor-pointer tabular-nums ${
                       extraMinutes === mins
-                        ? 'bg-indigo-600 text-white border-indigo-600'
-                        : 'bg-white text-slate-700 border-slate-200 hover:border-indigo-300'
+                        ? 'bg-teal-700 text-white border-teal-700 dark:bg-teal-600 dark:border-teal-600'
+                        : 'bg-[#F7F5EF] dark:bg-[#16263D] text-slate-700 dark:text-slate-300 border-[#E5E1D6] dark:border-[#1E2F47] hover:border-teal-500/50'
                     }`}
                   >
-                    {mins === 0 ? 'None (0 min)' : `+${mins} min`}
+                    {mins === 0 ? 'None (0m)' : `+${mins} min`}
                   </button>
                 ))}
               </div>
-              <p className="text-[11px] text-slate-500">
-                AI prioritizes: 1. Exam-critical concepts, 2. Weak topics, 3. Spaced revision, 4. Practice.
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Priority order: exam-critical concepts, weak topics, spaced revision, then practice.
               </p>
             </div>
 
-            {/* Error Message */}
             {error && (
-              <div role="alert" className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700">
+              <div
+                role="alert"
+                className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs text-rose-700 dark:text-rose-200"
+              >
                 {error}
               </div>
             )}
 
-            {/* Actions */}
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#E5E1D6] dark:border-[#1E2F47]">
               <button
                 id="adaptive-modal-cancel-btn"
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+                className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-[#EFECE3] dark:hover:bg-[#16263D] rounded-lg cursor-pointer"
               >
                 Cancel
               </button>
@@ -190,49 +201,55 @@ export const AdaptiveModal: React.FC<AdaptiveModalProps> = ({
                 type="button"
                 onClick={handleGenerateAdjustment}
                 disabled={isAdapting}
-                className="px-5 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg flex items-center gap-2 shadow-xs transition-colors disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-indigo-600"
+                className="px-5 py-2 text-sm font-semibold text-white bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {isAdapting ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    Calculating Reschedule...
+                    <span>Calculating Reschedule...</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4" />
-                    Recalibrate My Schedule
+                    <span>Recalibrate My Schedule</span>
                   </>
                 )}
               </button>
             </div>
           </div>
         ) : (
-          /* Preview Adapted Plan */
           <div className="space-y-5">
             <div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 mb-2">
+              <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-lime-700 dark:text-lime-400 mb-1.5">
                 <Check className="w-3.5 h-3.5" />
-                Schedule Rebalanced
+                <span>Schedule Rebalanced</span>
               </div>
-              <h2 className="text-xl font-bold text-slate-900">Plan Recalibration Ready</h2>
-              <p className="text-xs sm:text-sm text-slate-600 mt-1">{adaptedPreview.encouragementMessage}</p>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                Plan Recalibration Ready
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
+                {adaptedPreview.encouragementMessage}
+              </p>
             </div>
 
-            {/* Redistribution Summary Card */}
-            <div className="p-4 rounded-xl bg-indigo-50/60 border border-indigo-100 text-xs sm:text-sm space-y-2">
-              <h3 className="font-semibold text-indigo-950 flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-indigo-600" />
-                How StudyMate AI Rebalanced Your Work:
+            <div className="p-4 rounded-xl bg-[#F7F5EF] dark:bg-[#16263D] border border-[#E5E1D6] dark:border-[#1E2F47] text-xs sm:text-sm space-y-2.5">
+              <h3 className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-teal-700 dark:text-teal-400" />
+                <span>How StudyMate AI Rebalanced Your Work</span>
               </h3>
-              <p className="text-slate-700 leading-relaxed">{adaptedPreview.redistributionSummary}</p>
+              <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                {adaptedPreview.redistributionSummary}
+              </p>
 
-              <div className="pt-2 border-t border-indigo-100/80">
-                <span className="text-xs font-semibold text-indigo-900 block mb-1">Prioritization Order:</span>
+              <div className="pt-2 border-t border-[#E5E1D6] dark:border-[#1E2F47]">
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block mb-1.5">
+                  Prioritization Order
+                </span>
                 <div className="flex flex-wrap gap-1.5">
                   {adaptedPreview.priorityOrder.map((item, idx) => (
                     <span
                       key={idx}
-                      className="px-2 py-0.5 rounded bg-white text-indigo-800 border border-indigo-200 text-xs font-medium"
+                      className="px-2.5 py-1 rounded-md bg-white dark:bg-[#0F1D32] text-slate-800 dark:text-slate-200 border border-[#E5E1D6] dark:border-[#1E2F47] text-xs font-medium"
                     >
                       {idx + 1}. {item}
                     </span>
@@ -241,12 +258,11 @@ export const AdaptiveModal: React.FC<AdaptiveModalProps> = ({
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-between gap-3 pt-3 border-t border-[#E5E1D6] dark:border-[#1E2F47]">
               <button
                 type="button"
                 onClick={() => setAdaptedPreview(null)}
-                className="px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+                className="px-3 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-[#EFECE3] dark:hover:bg-[#16263D] rounded-lg cursor-pointer"
               >
                 &larr; Change Details
               </button>
@@ -254,17 +270,17 @@ export const AdaptiveModal: React.FC<AdaptiveModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-[#EFECE3] dark:hover:bg-[#16263D] rounded-lg cursor-pointer"
                 >
                   Discard
                 </button>
                 <button
                   type="button"
                   onClick={handleApply}
-                  className="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg flex items-center gap-1.5 shadow-xs"
+                  className="px-5 py-2 text-sm font-semibold text-white bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500 rounded-lg flex items-center gap-1.5 cursor-pointer"
                 >
                   <Check className="w-4 h-4" />
-                  Apply Recalibrated Plan
+                  <span>Apply Recalibrated Plan</span>
                 </button>
               </div>
             </div>

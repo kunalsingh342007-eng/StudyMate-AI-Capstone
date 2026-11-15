@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, Sparkles, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, Sparkles, ShieldCheck } from 'lucide-react';
 import { useAIStatus } from '../../hooks/useAIStatus';
 
 interface BannerProps {
@@ -15,12 +15,12 @@ export const Banner: React.FC<BannerProps> = ({ isDemoData }) => {
         id="demo-data-banner"
         role="status"
         aria-live="polite"
-        className="bg-amber-500/10 border-b border-amber-500/20 text-amber-900 px-4 py-2.5 text-xs sm:text-sm font-medium flex items-center justify-between gap-3"
+        className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 text-amber-900 dark:text-amber-200 px-4 py-2.5 text-xs sm:text-sm font-medium flex items-center justify-between gap-3"
       >
-        <div className="flex items-center gap-2 max-w-5xl mx-auto w-full">
-          <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" aria-hidden="true" />
+        <div className="flex items-center gap-2 w-full">
+          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden="true" />
           <span>
-            <strong className="font-semibold text-amber-950">Sample Demo Content</strong>: Displaying schema-valid structured educational sample. Dynamic generation uses Google Gemini.
+            <strong className="font-semibold text-amber-950 dark:text-amber-100">Sample Plan Preview</strong>: Displaying a structured sample plan. Live AI generation uses Google Gemini.
           </span>
         </div>
       </div>
@@ -37,13 +37,13 @@ export const Banner: React.FC<BannerProps> = ({ isDemoData }) => {
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0" aria-hidden="true" />
+            <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden="true" />
             <span>
               {status.message || 'StudyMate AI server configuration is pending. Please ensure GEMINI_API_KEY is configured.'}
             </span>
           </div>
-          <span className="hidden md:inline-flex items-center gap-1 text-amber-700 dark:text-amber-300 text-xs">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Keys Protected Server-Side
+          <span className="hidden md:inline-flex items-center gap-1 text-amber-700 dark:text-amber-300 text-xs whitespace-nowrap">
+            <ShieldCheck className="w-3.5 h-3.5 text-lime-600 dark:text-lime-400" /> Keys Protected Server-Side
           </span>
         </div>
       </div>
@@ -52,4 +52,3 @@ export const Banner: React.FC<BannerProps> = ({ isDemoData }) => {
 
   return null;
 };
-

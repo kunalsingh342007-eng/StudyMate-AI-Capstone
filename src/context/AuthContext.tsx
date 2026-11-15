@@ -28,6 +28,8 @@ interface AuthContextValue {
   enterDemoMode: () => void;
   exitDemoMode: () => void;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
+  uploadAvatar: (dataUrl: string, mimeType: string) => Promise<void>;
+  removeAvatar: () => Promise<void>;
   updatePreferences: (data: Partial<FirestorePreferences>) => Promise<void>;
   deleteAccount: () => Promise<void>;
 }
@@ -61,41 +63,110 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return DEFAULT_FIRESTORE_PREFERENCES.theme || 'system';
   });
 
-  // Synchronize profile and preferences when a user signs in via Firebase
+  // Keep AuthContext userProfile synchronized with user-scoped StorageService changes
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setUserProfile(StorageService.getUserProfile());
+    };
+    window.addEventListener('studymate_storage_change', handleStorageChange);
+    return () => window.removeEventListener('studymate_storage_change', handleStorageChange);
+  }, []);
+
+  // Synchronize profile, study plans, and preferences when a user signs in via Firebase
   const loadUserData = useCallback(async (user: User) => {
-    // 1. Immediately create and set local user profile so UI is instant and doesn't get stuck
-    const fallbackProfile: UserProfile = {
+    StorageService.setActiveUser(user.uid);
+    const localProfile = StorageService.getUserProfile();
+    const localAvatar = StorageService.getProfileAvatar();
+    const localPlans = StorageService.getSavedPlans();
+
+    const baseProfile: UserProfile = {
+      ...localProfile,
       id: user.uid,
-      name: user.displayName || user.email?.split('@')[0] || 'Student',
-      email: user.email || '',
-      avatarUrl: user.photoURL || undefined,
-      academicLevel: 'Undergraduate Senior',
-      institution: '',
-      targetExam: 'Semester Finals',
-      targetExamDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
-      bio: 'Student at StudyMate AI',
-      dailyGoalHours: 3,
-      streakDays: 1,
-      totalStudyMinutes: 0,
-      quizzesCompleted: 0,
+      name:
+        (localProfile.id === user.uid && localProfile.name && localProfile.name !== 'Student'
+          ? localProfile.name
+          : user.displayName || user.email?.split('@')[0]) || 'Student',
+      email: user.email || localProfile.email || '',
+      avatarUrl: localProfile.avatarRemoved
+        ? undefined
+        : localAvatar || localProfile.avatarUrl || user.photoURL || undefined,
+      onboardingCompleted: Boolean(localProfile.onboardingCompleted || localPlans.length > 0),
+      onboardingStep: typeof localProfile.onboardingStep === 'number' ? localProfile.onboardingStep : 0,
+      subjects: Array.isArray(localProfile.subjects) ? localProfile.subjects : [],
+      weakTopics: Array.isArray(localProfile.weakTopics) ? localProfile.weakTopics : [],
+      preferredStudyDays: Array.isArray(localProfile.preferredStudyDays) ? localProfile.preferredStudyDays : [],
     };
 
-    setUserProfile(fallbackProfile);
-    StorageService.saveUserProfile(fallbackProfile);
+    setUserProfile(baseProfile);
+    StorageService.saveUserProfile(baseProfile);
 
-    // 2. Fetch or save to Cloud Firestore if available
     try {
-      let profile = await FirestoreService.getUserProfile(user.uid);
-      if (!profile) {
-        profile = fallbackProfile;
-        await FirestoreService.saveUserProfile(user.uid, profile).catch(() => {});
-      } else {
-        setUserProfile(profile);
-        StorageService.saveUserProfile(profile);
+      const [remoteProfile, remoteAvatar, remotePlans, userPrefs] = await Promise.all([
+        FirestoreService.getUserProfile(user.uid),
+        FirestoreService.getUserAvatar(user.uid),
+        FirestoreService.getStudyPlans(user.uid),
+        FirestoreService.getUserPreferences(user.uid),
+      ]);
+
+      // Sync study plans between Firestore and user-scoped localStorage
+      if (remotePlans.length > 0) {
+        StorageService.replaceSavedPlans(remotePlans);
+      } else if (localPlans.length > 0) {
+        await Promise.all(
+          localPlans.map((p) => FirestoreService.saveStudyPlan(user.uid, p).catch(() => {}))
+        );
       }
 
-      // Load Firestore user preferences
-      const userPrefs = await FirestoreService.getUserPreferences(user.uid);
+      const hasAnyPlans = remotePlans.length > 0 || localPlans.length > 0;
+
+      if (!remoteProfile) {
+        const cleanInitialProfile: UserProfile = {
+          ...baseProfile,
+          id: user.uid,
+          name: user.displayName || user.email?.split('@')[0] || 'Student',
+          email: user.email || '',
+          avatarUrl: baseProfile.avatarRemoved
+            ? undefined
+            : remoteAvatar || localAvatar || user.photoURL || undefined,
+          streakDays: 0,
+          totalStudyMinutes: 0,
+          quizzesCompleted: 0,
+          onboardingCompleted: hasAnyPlans || Boolean(baseProfile.onboardingCompleted),
+          onboardingStep: baseProfile.onboardingStep || 0,
+        };
+        if (remoteAvatar && !cleanInitialProfile.avatarRemoved) {
+          StorageService.saveProfileAvatar(remoteAvatar);
+        }
+        setUserProfile(cleanInitialProfile);
+        StorageService.saveUserProfile(cleanInitialProfile);
+        await FirestoreService.saveUserProfile(user.uid, cleanInitialProfile).catch(() => {});
+      } else {
+        const isRemoved = Boolean(remoteProfile.avatarRemoved);
+        const resolvedAvatar = isRemoved
+          ? undefined
+          : remoteAvatar || localAvatar || remoteProfile.avatarUrl || user.photoURL || undefined;
+
+        if (remoteAvatar && !isRemoved) {
+          StorageService.saveProfileAvatar(remoteAvatar);
+        } else if (isRemoved) {
+          StorageService.removeProfileAvatar();
+        }
+
+        const mergedProfile: UserProfile = {
+          ...baseProfile,
+          ...remoteProfile,
+          id: user.uid,
+          email: remoteProfile.email || user.email || '',
+          avatarUrl: resolvedAvatar,
+          avatarRemoved: isRemoved,
+          onboardingCompleted: Boolean(
+            remoteProfile.onboardingCompleted || baseProfile.onboardingCompleted || hasAnyPlans
+          ),
+        };
+        setUserProfile(mergedProfile);
+        StorageService.saveUserProfile(mergedProfile);
+      }
+
       if (userPrefs) {
         setPreferences(userPrefs);
         if (userPrefs.theme) {
@@ -201,16 +272,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       const user = await AuthService.register(data);
+      StorageService.setActiveUser(user.uid);
 
-      // Save initial profile in Firestore (non-fatal if Firestore rules are pending)
       const initialProfile: Partial<UserProfile> = {
+        id: user.uid,
         name: data.displayName || 'Student',
         email: data.email,
-        academicLevel: data.academicLevel || 'Undergraduate Senior',
+        academicLevel: data.academicLevel || '',
         institution: data.institution || '',
-        targetExam: data.targetExam || 'Semester Finals',
-        dailyGoalHours: 3,
+        targetExam: data.targetExam || '',
+        dailyGoalHours: 0,
+        streakDays: 0,
+        totalStudyMinutes: 0,
+        quizzesCompleted: 0,
+        onboardingCompleted: false,
+        onboardingStep: 0,
+        subjects: [],
+        weakTopics: [],
+        preferredStudyDays: [],
       };
+      StorageService.saveUserProfile(initialProfile);
       await FirestoreService.saveUserProfile(user.uid, initialProfile).catch(() => {});
       await loadUserData(user);
     } finally {
@@ -244,12 +325,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateProfile = async (data: Partial<UserProfile>) => {
-    const updated = { ...userProfile, ...data };
+    const cleanPatch: Partial<UserProfile> = {};
+    (Object.keys(data) as (keyof UserProfile)[]).forEach((key) => {
+      if (data[key] !== undefined) {
+        (cleanPatch as Record<string, unknown>)[key] = data[key];
+      }
+    });
+
+    const updated = StorageService.saveUserProfile(cleanPatch);
     setUserProfile(updated);
-    StorageService.saveUserProfile(updated);
 
     if (currentUser?.uid) {
-      await FirestoreService.saveUserProfile(currentUser.uid, data);
+      await FirestoreService.saveUserProfile(currentUser.uid, cleanPatch);
+    }
+  };
+
+  const uploadAvatar = async (dataUrl: string, mimeType: string) => {
+    StorageService.saveProfileAvatar(dataUrl);
+    setUserProfile(StorageService.getUserProfile());
+
+    if (currentUser?.uid) {
+      await Promise.all([
+        FirestoreService.saveUserAvatar(currentUser.uid, dataUrl, mimeType),
+        FirestoreService.saveUserProfile(currentUser.uid, { avatarRemoved: false }),
+      ]);
+    }
+  };
+
+  const removeAvatar = async () => {
+    StorageService.removeProfileAvatar();
+    setUserProfile(StorageService.getUserProfile());
+
+    if (currentUser?.uid) {
+      await Promise.all([
+        FirestoreService.deleteUserAvatar(currentUser.uid),
+        FirestoreService.saveUserProfile(currentUser.uid, { avatarRemoved: true, avatarUrl: '' }),
+      ]);
     }
   };
 
@@ -290,6 +401,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     enterDemoMode,
     exitDemoMode,
     updateProfile,
+    uploadAvatar,
+    removeAvatar,
     updatePreferences: updatePreferencesState,
     deleteAccount,
   };

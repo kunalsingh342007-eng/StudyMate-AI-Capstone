@@ -1,24 +1,28 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  BarChart3,
   Flame,
   Clock,
   CheckCircle2,
   HelpCircle,
   TrendingUp,
   Award,
-  Sparkles,
   BookOpen,
   ArrowRight,
   AlertTriangle,
   RotateCcw,
   Check,
   ChevronRight,
-  Calendar,
 } from 'lucide-react';
 import { useStorage } from '../hooks/useStorage';
-import { Badge } from '../components/ui/Common';
+import { useToast } from '../context/ToastContext';
+import {
+  PageHeader,
+  StudioPanel,
+  ProgressMeter,
+  StatusIndicator,
+  EmptyState,
+} from '../components/ui/Common';
 import { MasteryEngine } from '../services/learning/masteryEngine';
 
 export const ProgressPage: React.FC = () => {
@@ -32,207 +36,211 @@ export const ProgressPage: React.FC = () => {
     resolveMistake,
     completeSpacedReview,
   } = useStorage();
+  const { showToast } = useToast();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'mastery' | 'mistakes' | 'spaced'>('overview');
   const [filterResolved, setFilterResolved] = useState(false);
 
-  const totalTasks = activePlan?.tasks.length || progress.totalTasksCount || 1;
-  const completedTasks = activePlan?.tasks.filter((t) => t.status === 'completed').length || progress.completedTasksCount || 0;
-  const syllabusPercent = Math.round((completedTasks / totalTasks) * 100);
+  const totalTasks = activePlan?.tasks.length || progress.totalTasksCount || 0;
+  const completedTasks =
+    activePlan?.tasks.filter((t) => t.status === 'completed').length || progress.completedTasksCount || 0;
+  const syllabusPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-  // Compute rich weak areas and knowledge tree
   const weakAreas = MasteryEngine.detectWeakAreas(masteries, mistakes);
   const knowledgeTree = MasteryEngine.buildKnowledgeTree(activePlan, masteries);
 
+  const unresolvedMistakeCount = mistakes.filter((m) => !m.resolved).length;
+  const dueReviewCount = spacedReviews.filter(
+    (r) => r.dueStatus === 'due' || r.dueStatus === 'overdue'
+  ).length;
   const displayedMistakes = mistakes.filter((m) => (filterResolved ? true : !m.resolved));
 
-  return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="border-b border-purple-100/80 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-purple-600 font-mono">
-            ACADEMIC ANALYTICS &bull; STUDY INTELLIGENCE
-          </span>
-          <h1 className="text-2xl sm:text-4xl font-extrabold text-[#1E1B4B] tracking-tight mt-1">
-            Learning Progress & Mastery
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Real-time tracking of topic mastery scores, mistake patterns, and spaced retrieval intervals
-          </p>
-        </div>
+  const handleResolveMistake = (id: string, topic: string) => {
+    resolveMistake(id);
+    showToast(`Marked mistake in "${topic}" as resolved`, 'success');
+  };
 
-        {/* Tab Controls */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold">
-          <button
-            type="button"
-            onClick={() => setActiveTab('overview')}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
-              activeTab === 'overview'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Overview
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('mastery')}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
-              activeTab === 'mastery'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Knowledge Map
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('mistakes')}
-            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
-              activeTab === 'mistakes'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Mistakes
-            {mistakes.filter((m) => !m.resolved).length > 0 && (
-              <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
-                {mistakes.filter((m) => !m.resolved).length}
-              </span>
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('spaced')}
-            className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
-              activeTab === 'spaced'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Spaced Queue
-            {spacedReviews.filter((r) => r.dueStatus === 'due' || r.dueStatus === 'overdue').length > 0 && (
-              <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center">
-                {spacedReviews.filter((r) => r.dueStatus === 'due' || r.dueStatus === 'overdue').length}
-              </span>
-            )}
-          </button>
-        </div>
-      </div>
+  const handleCompleteReview = (id: string, concept: string) => {
+    completeSpacedReview(id, 'good');
+    showToast(`Scheduled next spaced retrieval interval for "${concept}"`, 'success');
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-6">
+      <PageHeader
+        eyebrow="Learning Analytics"
+        title="Progress & Topic Mastery"
+        description="Deterministic topic mastery scores, mistake diagnostics, and spaced retrieval schedules computed from your real sessions."
+        actions={
+          <div className="flex items-center gap-1 p-1 bg-[#EFECE3] dark:bg-[#16263D] rounded-xl border border-[#E5E1D6] dark:border-[#1E2F47] text-xs font-semibold flex-wrap">
+            {(
+              [
+                { id: 'overview', label: 'Overview', count: 0 },
+                { id: 'mastery', label: 'Knowledge Map', count: 0 },
+                { id: 'mistakes', label: 'Mistakes', count: unresolvedMistakeCount },
+                { id: 'spaced', label: 'Spaced Queue', count: dueReviewCount },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? 'bg-white dark:bg-[#0F1D32] text-slate-900 dark:text-slate-100 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                }`}
+              >
+                <span>{tab.label}</span>
+                {tab.count > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 text-[10px] font-mono tabular-nums">
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        }
+      />
 
       {/* Top Overview Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-1">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-semibold">
-            <span>STUDY STREAK</span>
-            <Flame className="w-4 h-4 text-amber-500" />
+        <StudioPanel className="p-5 space-y-1.5">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold">
+            <span>Study Streak</span>
+            <Flame className="w-4 h-4 text-amber-500" aria-hidden="true" />
           </div>
-          <div className="text-3xl font-extrabold text-slate-900">{progress.streakDays} Days</div>
-          <p className="text-[11px] text-slate-500">Consecutive days active</p>
-        </div>
+          <div className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+            {progress.streakDays} Days
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Consecutive active days</p>
+        </StudioPanel>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-1">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-semibold">
-            <span>TOTAL HOURS</span>
-            <Clock className="w-4 h-4 text-blue-600" />
+        <StudioPanel className="p-5 space-y-1.5">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold">
+            <span>Total Study Time</span>
+            <Clock className="w-4 h-4 text-teal-700 dark:text-teal-400" aria-hidden="true" />
           </div>
-          <div className="text-3xl font-extrabold text-slate-900">{progress.totalHoursStudied}h</div>
-          <p className="text-[11px] text-slate-500">Dedicated focus time</p>
-        </div>
+          <div className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+            {progress.totalHoursStudied}h
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Logged focus hours</p>
+        </StudioPanel>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-1">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-semibold">
-            <span>SYLLABUS PROGRESS</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+        <StudioPanel className="p-5 space-y-1.5">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold">
+            <span>Syllabus Progress</span>
+            <CheckCircle2 className="w-4 h-4 text-lime-600 dark:text-lime-400" aria-hidden="true" />
           </div>
-          <div className="text-3xl font-extrabold text-slate-900">{syllabusPercent}%</div>
-          <p className="text-[11px] text-slate-500">{completedTasks} of {totalTasks} tasks done</p>
-        </div>
+          <div className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+            {syllabusPercent}%
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+            {completedTasks} of {totalTasks} tasks completed
+          </p>
+        </StudioPanel>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-1">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-semibold">
-            <span>AVERAGE QUIZ SCORE</span>
-            <Award className="w-4 h-4 text-violet-600" />
+        <StudioPanel className="p-5 space-y-1.5">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold">
+            <span>Average Quiz Score</span>
+            <Award className="w-4 h-4 text-teal-700 dark:text-teal-400" aria-hidden="true" />
           </div>
-          <div className="text-3xl font-extrabold text-slate-900">{progress.averageQuizScore}%</div>
-          <p className="text-[11px] text-slate-500">Across {progress.quizzesTaken} assessments</p>
-        </div>
+          <div className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+            {progress.quizzesTaken > 0 ? `${progress.averageQuizScore}%` : '—'}
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+            Across {progress.quizzesTaken} assessment{progress.quizzesTaken === 1 ? '' : 's'}
+          </p>
+        </StudioPanel>
       </div>
 
       {/* TAB 1: OVERVIEW */}
       {activeTab === 'overview' && (
-        <div className="space-y-8">
-          {/* Syllabus Breakdown & Weak Areas */}
+        <div className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Active Syllabus Progress */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+            <StudioPanel className="p-6 space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-indigo-600" />
-                  Active Syllabus Completion
+                <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-teal-700 dark:text-teal-400" aria-hidden="true" />
+                  <span>Active Syllabus Completion</span>
                 </h2>
-                <span className="text-xs font-semibold text-indigo-600">{syllabusPercent}% Complete</span>
+                <span className="text-xs font-semibold text-teal-700 dark:text-teal-400 tabular-nums">
+                  {syllabusPercent}% Complete
+                </span>
               </div>
 
-              <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-indigo-600 rounded-full transition-all duration-500"
-                  style={{ width: `${syllabusPercent}%` }}
-                />
-              </div>
+              <ProgressMeter value={syllabusPercent} tone="teal" label="Syllabus completion" />
 
               {activePlan ? (
-                <div className="space-y-2 pt-2 text-xs sm:text-sm">
-                  <div className="flex items-center justify-between text-slate-600 font-medium pb-1 border-b border-slate-100">
-                    <span>Subject: {activePlan.subject}</span>
+                <div className="space-y-2.5 pt-2 text-xs sm:text-sm">
+                  <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 font-medium pb-2 border-b border-[#E5E1D6] dark:border-[#1E2F47] tabular-nums">
+                    <span>{activePlan.subject}</span>
                     <span>Exam: {activePlan.examDate}</span>
                   </div>
 
-                  <div className="space-y-1.5 pt-1 max-h-60 overflow-y-auto">
+                  <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
                     {activePlan.tasks.map((task) => (
                       <div
                         key={task.id}
-                        className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100 text-xs"
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-[#F7F5EF] dark:bg-[#16263D] border border-[#E5E1D6] dark:border-[#1E2F47] text-xs gap-2"
                       >
-                        <div className="flex items-center gap-2 truncate">
+                        <div className="flex items-center gap-2 min-w-0">
                           <span
-                            className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                            className={`w-2 h-2 rounded-full shrink-0 ${
                               task.status === 'completed'
-                                ? 'bg-emerald-500'
+                                ? 'bg-lime-500'
                                 : task.status === 'missed'
                                 ? 'bg-rose-500'
-                                : 'bg-slate-300'
+                                : 'bg-slate-400 dark:bg-slate-500'
                             }`}
                           />
-                          <span className={`truncate font-medium ${task.status === 'completed' ? 'line-through text-slate-400' : 'text-slate-800'}`}>
+                          <span
+                            className={`truncate font-medium ${
+                              task.status === 'completed'
+                                ? 'line-through text-slate-400 dark:text-slate-500'
+                                : 'text-slate-800 dark:text-slate-200'
+                            }`}
+                          >
                             {task.topic}: {task.subtopic}
                           </span>
                         </div>
-                        <span className="text-slate-500 font-mono flex-shrink-0 ml-2">{task.durationMinutes}m</span>
+                        <span className="text-slate-500 dark:text-slate-400 font-mono tabular-nums shrink-0">
+                          {task.durationMinutes}m
+                        </span>
                       </div>
                     ))}
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-slate-500">No active plan configured yet.</p>
+                <div className="py-6 text-center space-y-3">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    No active study plan configured yet.
+                  </p>
+                  <Link
+                    to="/planner"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500"
+                  >
+                    Create Study Plan <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
               )}
-            </div>
+            </StudioPanel>
 
-            {/* Weak Topics Detection Card */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-              <div className="flex items-center justify-between">
+            {/* Prioritized Weak Areas */}
+            <StudioPanel className="p-6 space-y-4">
+              <div className="flex items-center justify-between gap-2">
                 <div>
-                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-rose-600" />
-                    Prioritized Weak Areas
+                  <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-rose-600 dark:text-rose-400" aria-hidden="true" />
+                    <span>Prioritized Weak Areas</span>
                   </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Calculated from accuracy, mistake counts, and exam urgency
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Derived from quiz accuracy, mistake counts, and exam urgency
                   </p>
                 </div>
-                <span className="text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg">
-                  {weakAreas.length} Needs Review
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 tabular-nums whitespace-nowrap">
+                  {weakAreas.length} flagged
                 </span>
               </div>
 
@@ -241,236 +249,249 @@ export const ProgressPage: React.FC = () => {
                   {weakAreas.map((item, i) => (
                     <div
                       key={i}
-                      className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 flex flex-col gap-2"
+                      className="p-3.5 rounded-xl border border-[#E5E1D6] dark:border-[#1E2F47] bg-[#F7F5EF] dark:bg-[#16263D] flex flex-col gap-2"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 truncate">
-                          <span
-                            className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
-                              item.priority === 'High'
-                                ? 'bg-rose-500 ring-2 ring-rose-200'
-                                : item.priority === 'Medium'
-                                ? 'bg-amber-500 ring-2 ring-amber-200'
-                                : 'bg-yellow-400'
-                            }`}
+                        <span className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                          {item.topic}
+                        </span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <StatusIndicator
+                            label={`${item.priority} priority`}
+                            tone={item.priority === 'High' ? 'rose' : item.priority === 'Medium' ? 'amber' : 'neutral'}
                           />
-                          <span className="text-xs font-bold text-slate-900 truncate">{item.topic}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={item.priority === 'High' ? 'danger' : item.priority === 'Medium' ? 'warning' : 'default'} size="sm">
-                            {item.priority} Priority
-                          </Badge>
-                          <span className="font-mono text-xs font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">
-                            {item.mastery}% Mastery
+                          <span className="text-slate-300 dark:text-slate-600" aria-hidden="true">&middot;</span>
+                          <span className="font-mono text-xs font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+                            {item.mastery}%
                           </span>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between text-xs text-slate-600 pt-1 border-t border-slate-200">
-                        <span className="text-[11px] text-slate-500 truncate mr-2">
+                      <div className="flex items-center justify-between text-xs pt-2 border-t border-[#E5E1D6] dark:border-[#1E2F47]">
+                        <span className="text-[11px] text-slate-600 dark:text-slate-400 truncate mr-2">
                           {item.recommendedAction}
                         </span>
                         <Link
                           to={item.actionRoute}
-                          className="font-bold text-purple-600 hover:text-purple-800 flex items-center gap-0.5 whitespace-nowrap"
+                          className="font-semibold text-teal-700 dark:text-teal-400 hover:underline flex items-center gap-1 whitespace-nowrap"
                         >
-                          Remediate &rarr;
+                          Remediate <ArrowRight className="w-3 h-3" />
                         </Link>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-slate-400 italic py-6 text-center">
-                  No weak topics flagged! Your current topic masteries are above baseline thresholds.
-                </p>
+                <div className="py-10 text-center space-y-2">
+                  <p className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                    No weak topics flagged right now.
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Complete quizzes to surface specific topics needing deeper revision.
+                  </p>
+                </div>
               )}
-            </div>
+            </StudioPanel>
           </div>
 
           {/* Quiz Performance Timeline */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between">
+          <StudioPanel className="p-6 space-y-4">
+            <div className="flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <HelpCircle className="w-4 h-4 text-indigo-600" />
-                  Recent Practice Quiz Performance
+                <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <HelpCircle className="w-4 h-4 text-teal-700 dark:text-teal-400" aria-hidden="true" />
+                  <span>Recent Practice Quiz Performance</span>
                 </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Score breakdown and diagnostic takeaways
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Score breakdown from completed assessments
                 </p>
               </div>
               <Link
                 to="/quiz"
-                className="px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors flex items-center gap-1"
+                className="px-3.5 py-2 text-xs font-semibold text-teal-700 dark:text-teal-300 bg-[#F7F5EF] dark:bg-[#16263D] hover:bg-[#EFECE3] dark:hover:bg-[#1E2F47] border border-[#E5E1D6] dark:border-[#1E2F47] rounded-xl transition-colors flex items-center gap-1.5 whitespace-nowrap"
               >
-                Take New Quiz <ArrowRight className="w-3.5 h-3.5" />
+                <span>Take New Quiz</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
             {quizHistory.length > 0 ? (
-              <div className="space-y-3">
-                {quizHistory.slice(0, 5).map((q) => (
+              <div className="space-y-2.5">
+                {quizHistory.slice(0, 6).map((q) => (
                   <div
                     key={q.id}
-                    className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3"
+                    className="p-4 rounded-xl border border-[#E5E1D6] dark:border-[#1E2F47] bg-[#F7F5EF] dark:bg-[#16263D] flex flex-wrap items-center justify-between gap-3"
                   >
                     <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-bold text-slate-900">{q.topic}</h3>
-                        <Badge variant={q.percentage >= 70 ? 'success' : 'danger'} size="sm">
-                          {q.percentage}%
-                        </Badge>
+                      <div className="flex items-center gap-2.5">
+                        <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">{q.topic}</h3>
+                        <StatusIndicator
+                          label={`${q.percentage}%`}
+                          tone={q.percentage >= 70 ? 'lime' : 'rose'}
+                        />
                       </div>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        {q.subject} &bull; {q.difficulty} &bull; {new Date(q.completedAt).toLocaleDateString()}
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        {q.subject} &middot; {q.difficulty} &middot;{' '}
+                        <span className="tabular-nums">{new Date(q.completedAt).toLocaleDateString()}</span>
                       </p>
                     </div>
-                    <div className="text-right text-xs">
-                      <div className="font-semibold text-slate-800">{q.score} / {q.totalQuestions} Correct</div>
+                    <div className="flex items-center gap-4 text-xs">
+                      <span className="font-semibold text-slate-800 dark:text-slate-200 tabular-nums">
+                        {q.score} / {q.totalQuestions} Correct
+                      </span>
+                      <Link
+                        to={`/quiz?topic=${encodeURIComponent(q.topic)}`}
+                        className="font-semibold text-teal-700 dark:text-teal-400 hover:underline whitespace-nowrap"
+                      >
+                        Retest
+                      </Link>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-slate-500 text-center py-4">
-                No quizzes completed yet. Test yourself on any topic in the AI Quiz section!
-              </p>
+              <div className="py-6 text-center space-y-2">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  No quizzes completed yet. Test yourself on any topic in the Practice Quiz studio.
+                </p>
+              </div>
             )}
-          </div>
+          </StudioPanel>
         </div>
       )}
 
-      {/* TAB 2: KNOWLEDGE MAP (Hierarchical Topic Mastery) */}
+      {/* TAB 2: KNOWLEDGE MAP */}
       {activeTab === 'mastery' && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
+        <StudioPanel className="p-6 sm:p-8 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E5E1D6] dark:border-[#1E2F47] pb-4">
             <div>
-              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-indigo-600" />
-                Knowledge Map Hierarchy
+              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-teal-700 dark:text-teal-400" aria-hidden="true" />
+                <span>Knowledge Map Hierarchy</span>
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Deterministic topic mastery scores computed from quiz accuracy, recency trend, study time, and confidence ratings
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Topic mastery computed from quiz accuracy, recency, study time, and confidence ratings
               </p>
             </div>
-            <div className="flex items-center gap-2 text-xs font-semibold">
-              <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                &ge;75% Mastered
-              </span>
-              <span className="inline-flex items-center gap-1 text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                50-74% Practice
-              </span>
-              <span className="inline-flex items-center gap-1 text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
-                &lt;50% Weak
-              </span>
+            <div className="flex items-center gap-3 text-xs">
+              <StatusIndicator label=">=75% Mastered" tone="lime" />
+              <StatusIndicator label="50–74% Practice" tone="amber" />
+              <StatusIndicator label="<50% Needs Focus" tone="rose" />
             </div>
           </div>
 
-          <div className="space-y-4">
-            {knowledgeTree.map((node) => {
-              const tm = masteries[node.name];
-              const score = node.mastery;
-              return (
-                <div
-                  key={node.id}
-                  className="rounded-2xl border border-slate-200 p-5 bg-slate-50/60 space-y-3"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-800 font-bold text-xs flex items-center justify-center font-mono">
-                        {node.level}
-                      </span>
-                      <div>
-                        <h3 className="text-sm font-bold text-slate-900">{node.name}</h3>
-                        <span className="text-[11px] text-slate-500">
-                          {tm ? `${tm.attemptsCount} quiz attempts &bull; ${tm.accuracy}% accuracy` : 'No attempts logged'}
+          {knowledgeTree.length > 0 ? (
+            <div className="space-y-4">
+              {knowledgeTree.map((node) => {
+                const tm = masteries[node.name];
+                const score = node.mastery;
+                const tone = score >= 75 ? 'lime' : score >= 50 ? 'amber' : 'rose';
+                return (
+                  <div
+                    key={node.id}
+                    className="rounded-xl border border-[#E5E1D6] dark:border-[#1E2F47] p-5 bg-[#F7F5EF] dark:bg-[#16263D] space-y-3"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <span className="w-7 h-7 rounded-lg bg-white dark:bg-[#0F1D32] border border-[#E5E1D6] dark:border-[#1E2F47] text-teal-700 dark:text-teal-400 font-bold text-xs flex items-center justify-center font-mono tabular-nums">
+                          {node.level}
                         </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <div className="w-32 hidden sm:block h-2.5 bg-slate-200 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-300 ${
-                            score >= 75 ? 'bg-emerald-500' : score >= 50 ? 'bg-amber-500' : 'bg-rose-500'
-                          }`}
-                          style={{ width: `${score}%` }}
-                        />
-                      </div>
-                      <span className="text-xs font-mono font-bold text-slate-800 bg-white px-2.5 py-1 rounded-lg border border-slate-200">
-                        {score}%
-                      </span>
-                      <Link
-                        to={`/quiz?topic=${encodeURIComponent(node.name)}`}
-                        className="px-2.5 py-1 text-xs font-semibold text-indigo-600 bg-white hover:bg-indigo-50 border border-slate-200 rounded-lg shadow-xs transition-colors"
-                      >
-                        Drill &rarr;
-                      </Link>
-                    </div>
-                  </div>
-
-                  {/* Subtopics Tree Branches */}
-                  {node.subtopics && node.subtopics.length > 0 && (
-                    <div className="pl-6 space-y-1.5 border-l-2 border-indigo-200 ml-3.5 pt-1">
-                      {node.subtopics.map((sub, sIdx) => (
-                        <div
-                          key={sIdx}
-                          className="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-200/80 text-xs"
-                        >
-                          <div className="flex items-center gap-2">
-                            <ChevronRight className="w-3 h-3 text-slate-400" />
-                            <span className="font-medium text-slate-800">{sub.name}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`text-[11px] font-bold px-2 py-0.5 rounded ${
-                                sub.mastery >= 75
-                                  ? 'bg-emerald-50 text-emerald-700'
-                                  : sub.mastery >= 50
-                                  ? 'bg-amber-50 text-amber-700'
-                                  : 'bg-rose-50 text-rose-700'
-                              }`}
-                            >
-                              {sub.mastery}%
-                            </span>
-                          </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">{node.name}</h3>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
+                            {tm ? `${tm.attemptsCount} quiz attempts · ${tm.accuracy}% accuracy` : 'No quiz attempts logged'}
+                          </span>
                         </div>
-                      ))}
+                      </div>
+
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <div className="w-28 hidden sm:block">
+                          <ProgressMeter value={score} tone={tone} label={`${node.name} mastery`} />
+                        </div>
+                        <span className="text-xs font-mono font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+                          {score}%
+                        </span>
+                        <Link
+                          to={`/explain?topic=${encodeURIComponent(node.name)}`}
+                          className="px-2.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-[#0F1D32] hover:bg-[#EFECE3] dark:hover:bg-[#1E2F47] border border-[#E5E1D6] dark:border-[#1E2F47] rounded-lg transition-colors"
+                        >
+                          Explain
+                        </Link>
+                        <Link
+                          to={`/quiz?topic=${encodeURIComponent(node.name)}`}
+                          className="px-2.5 py-1.5 text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500 rounded-lg transition-colors"
+                        >
+                          Drill
+                        </Link>
+                      </div>
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+
+                    {node.subtopics && node.subtopics.length > 0 && (
+                      <div className="pl-4 sm:pl-6 space-y-1.5 pt-1">
+                        {node.subtopics.map((sub, sIdx) => (
+                          <div
+                            key={sIdx}
+                            className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-[#0F1D32] border border-[#E5E1D6] dark:border-[#1E2F47] text-xs gap-2"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span className="font-medium text-slate-800 dark:text-slate-200 truncate">
+                                {sub.name}
+                              </span>
+                            </div>
+                            <StatusIndicator
+                              label={`${sub.mastery}%`}
+                              tone={sub.mastery >= 75 ? 'lime' : sub.mastery >= 50 ? 'amber' : 'rose'}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <EmptyState
+              icon={<BookOpen className="w-5 h-5" />}
+              title="No topics mapped yet"
+              description="Generate a study plan or complete a practice quiz to populate your topic mastery hierarchy."
+              action={
+                <Link
+                  to="/planner"
+                  className="px-4 py-2 text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500 rounded-xl"
+                >
+                  Create Study Plan
+                </Link>
+              }
+            />
+          )}
+        </StudioPanel>
       )}
 
-      {/* TAB 3: MISTAKES & MISCONCEPTIONS NOTEBOOK */}
+      {/* TAB 3: MISTAKES NOTEBOOK */}
       {activeTab === 'mistakes' && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+        <StudioPanel className="p-6 sm:p-8 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E5E1D6] dark:border-[#1E2F47] pb-4">
             <div>
-              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-rose-600" />
-                Mistakes & Misconceptions Notebook
+              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400" aria-hidden="true" />
+                <span>Mistakes & Misconceptions Notebook</span>
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Every quiz mistake is tracked with category tags, confidence levels, and resolution status
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Incorrect quiz questions are tracked with mistake category, confidence, and resolution status
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-semibold text-slate-600 flex items-center gap-1.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={filterResolved}
-                  onChange={(e) => setFilterResolved(e.target.checked)}
-                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                />
-                Show Resolved ({mistakes.filter((m) => m.resolved).length})
-              </label>
-            </div>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filterResolved}
+                onChange={(e) => setFilterResolved(e.target.checked)}
+                className="rounded border-[#E5E1D6] dark:border-[#1E2F47] text-teal-700 focus:ring-teal-600"
+              />
+              <span>Show Resolved ({mistakes.filter((m) => m.resolved).length})</span>
+            </label>
           </div>
 
           {displayedMistakes.length > 0 ? (
@@ -478,71 +499,74 @@ export const ProgressPage: React.FC = () => {
               {displayedMistakes.map((m) => (
                 <div
                   key={m.id}
-                  className={`p-5 rounded-2xl border transition-all ${
+                  className={`p-5 rounded-xl border transition-colors ${
                     m.resolved
-                      ? 'bg-slate-50/60 border-slate-200 opacity-70'
-                      : 'bg-white border-rose-200/90 shadow-xs'
+                      ? 'bg-[#F7F5EF] dark:bg-[#0B1626] border-[#E5E1D6] dark:border-[#1E2F47] opacity-75'
+                      : 'bg-[#F7F5EF] dark:bg-[#16263D] border-rose-200 dark:border-rose-900/60'
                   }`}
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-900">{m.topic}</span>
-                      <span className="text-xs font-semibold text-rose-800 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
-                        {m.mistakeCategory} Mistake
-                      </span>
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#E5E1D6] dark:border-[#1E2F47] pb-3">
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="font-bold text-slate-900 dark:text-slate-100">{m.topic}</span>
+                      <span aria-hidden="true" className="text-slate-400">&middot;</span>
+                      <StatusIndicator label={`${m.mistakeCategory} mistake`} tone="rose" />
                       {m.confidence === 'High' && (
-                        <span className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
-                          High Conf Misconception
-                        </span>
+                        <>
+                          <span aria-hidden="true" className="text-slate-400">&middot;</span>
+                          <StatusIndicator label="High confidence misconception" tone="amber" />
+                        </>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="text-slate-400 font-mono">
+                    <div className="flex items-center gap-3 text-xs">
+                      <span className="text-slate-500 dark:text-slate-400 font-mono tabular-nums">
                         {new Date(m.timestamp).toLocaleDateString()}
                       </span>
                       {!m.resolved ? (
                         <button
                           type="button"
-                          onClick={() => resolveMistake(m.id)}
-                          className="px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors flex items-center gap-1"
+                          onClick={() => handleResolveMistake(m.id, m.topic)}
+                          className="px-3 py-1.5 text-xs font-semibold text-teal-800 dark:text-teal-300 bg-white dark:bg-[#0F1D32] hover:bg-[#EFECE3] dark:hover:bg-[#1E2F47] border border-[#E5E1D6] dark:border-[#1E2F47] rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
                         >
-                          <Check className="w-3.5 h-3.5" /> Mark Resolved
+                          <Check className="w-3.5 h-3.5 text-lime-600 dark:text-lime-400" />
+                          <span>Mark Resolved</span>
                         </button>
                       ) : (
-                        <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> Resolved
-                        </span>
+                        <StatusIndicator label="Resolved" tone="lime" />
                       )}
                     </div>
                   </div>
 
-                  <div className="pt-3 space-y-2 text-xs sm:text-sm">
-                    <p className="font-semibold text-slate-900">{m.questionText}</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
-                      <div className="p-2.5 rounded-lg bg-rose-50/70 border border-rose-200 text-rose-950">
-                        <strong className="block text-rose-800 mb-0.5 font-bold">Your Selected Answer:</strong>
+                  <div className="pt-3 space-y-3 text-xs sm:text-sm">
+                    <p className="font-semibold text-slate-900 dark:text-slate-100">{m.questionText}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div className="p-3 rounded-lg bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-rose-950 dark:text-rose-200">
+                        <strong className="block text-rose-800 dark:text-rose-300 mb-0.5 font-semibold">
+                          Your Selected Answer
+                        </strong>
                         {m.selectedAnswer}
                       </div>
-                      <div className="p-2.5 rounded-lg bg-emerald-50/70 border border-emerald-200 text-emerald-950">
-                        <strong className="block text-emerald-800 mb-0.5 font-bold">Correct Answer:</strong>
+                      <div className="p-3 rounded-lg bg-lime-50/70 dark:bg-lime-950/25 border border-lime-200 dark:border-lime-900/50 text-lime-950 dark:text-lime-200">
+                        <strong className="block text-lime-800 dark:text-lime-300 mb-0.5 font-semibold">
+                          Correct Answer
+                        </strong>
                         {m.correctAnswer}
                       </div>
                     </div>
 
                     {m.explanation && (
-                      <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-700 mt-2">
-                        <strong className="text-slate-900 block mb-0.5">Explanation:</strong>
+                      <div className="p-3 rounded-lg bg-white dark:bg-[#0F1D32] border border-[#E5E1D6] dark:border-[#1E2F47] text-xs text-slate-700 dark:text-slate-300">
+                        <strong className="text-slate-900 dark:text-slate-100 block mb-0.5">Explanation</strong>
                         {m.explanation}
                       </div>
                     )}
 
-                    <div className="pt-2 flex items-center justify-end gap-2">
+                    <div className="pt-1 flex items-center justify-end gap-3">
                       <Link
                         to={`/explain?topic=${encodeURIComponent(m.topic)}`}
-                        className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                        className="text-xs font-semibold text-teal-700 dark:text-teal-400 hover:underline flex items-center gap-1"
                       >
-                        Review Topic Breakdown &rarr;
+                        Review in AI Explainer <ArrowRight className="w-3 h-3" />
                       </Link>
                     </div>
                   </div>
@@ -550,33 +574,33 @@ export const ProgressPage: React.FC = () => {
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-slate-500 text-xs sm:text-sm space-y-2">
-              <p className="font-semibold text-slate-700">No active mistakes in your review notebook!</p>
-              <p className="text-slate-400">
-                Incorrect quiz questions automatically flow here for deliberate reflection and remediation.
-              </p>
-            </div>
+            <EmptyState
+              icon={<CheckCircle2 className="w-5 h-5" />}
+              title="No active mistakes in your review notebook"
+              description="Incorrect quiz questions automatically flow here for deliberate reflection and remediation."
+            />
           )}
-        </div>
+        </StudioPanel>
       )}
 
       {/* TAB 4: SPACED REPETITION QUEUE */}
       {activeTab === 'spaced' && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+        <StudioPanel className="p-6 sm:p-8 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E5E1D6] dark:border-[#1E2F47] pb-4">
             <div>
-              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <RotateCcw className="w-5 h-5 text-indigo-600" />
-                Spaced Retrieval Queue (Leitner Schedule)
+              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <RotateCcw className="w-5 h-5 text-teal-700 dark:text-teal-400" aria-hidden="true" />
+                <span>Spaced Retrieval Queue</span>
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Algorithms schedule review intervals (1, 3, 7, 14, 30 days) to prevent forgetting curve decay
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Leitner review intervals (1, 3, 7, 14, 30 days) scheduled to prevent forgetting decay
               </p>
             </div>
 
-            <span className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg">
-              {spacedReviews.filter((r) => r.dueStatus === 'due' || r.dueStatus === 'overdue').length} Items Due
-            </span>
+            <StatusIndicator
+              label={`${dueReviewCount} item${dueReviewCount === 1 ? '' : 's'} due`}
+              tone={dueReviewCount > 0 ? 'amber' : 'lime'}
+            />
           </div>
 
           {spacedReviews.length > 0 ? (
@@ -586,40 +610,46 @@ export const ProgressPage: React.FC = () => {
                 return (
                   <div
                     key={item.id}
-                    className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all ${
+                    className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
                       isDue
-                        ? 'bg-amber-50/60 border-amber-300 shadow-xs'
-                        : 'bg-slate-50/50 border-slate-200'
+                        ? 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-800/60'
+                        : 'bg-[#F7F5EF] dark:bg-[#16263D] border-[#E5E1D6] dark:border-[#1E2F47]'
                     }`}
                   >
-                    <div className="space-y-1 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-slate-900">{item.concept}</span>
-                        <Badge variant={isDue ? 'warning' : 'default'} size="sm">
-                          {isDue ? 'DUE NOW' : 'Scheduled'}
-                        </Badge>
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2.5">
+                        <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                          {item.concept}
+                        </span>
+                        <StatusIndicator
+                          label={isDue ? 'Due now' : 'Scheduled'}
+                          tone={isDue ? 'amber' : 'neutral'}
+                        />
                       </div>
-                      <p className="text-xs text-slate-500">{item.reason}</p>
-                      <div className="flex items-center gap-3 text-[11px] text-slate-400 pt-0.5 font-mono">
+                      <p className="text-xs text-slate-600 dark:text-slate-400">{item.reason}</p>
+                      <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 pt-0.5 font-mono tabular-nums">
                         <span>Interval: {item.intervalDays}d</span>
-                        <span>Level: Box {item.reviewCount + 1}</span>
-                        <span>Target Date: {item.nextReviewAt}</span>
+                        <span aria-hidden="true">&middot;</span>
+                        <span>Box {item.reviewCount + 1}</span>
+                        <span aria-hidden="true">&middot;</span>
+                        <span>Next review: {item.nextReviewAt}</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 self-end sm:self-center">
+                    <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
                       <Link
                         to={`/quiz?topic=${encodeURIComponent(item.topic)}`}
-                        className="px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs transition-colors"
+                        className="px-3.5 py-2 text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500 rounded-lg transition-colors whitespace-nowrap"
                       >
                         Practice Drill
                       </Link>
                       <button
                         type="button"
-                        onClick={() => completeSpacedReview(item.id, 'good')}
-                        className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors flex items-center gap-1"
+                        onClick={() => handleCompleteReview(item.id, item.concept)}
+                        className="px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-[#0F1D32] hover:bg-[#EFECE3] dark:hover:bg-[#1E2F47] border border-[#E5E1D6] dark:border-[#1E2F47] rounded-lg transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap"
                       >
-                        <Check className="w-3.5 h-3.5 text-emerald-600" /> Complete
+                        <Check className="w-3.5 h-3.5 text-lime-600 dark:text-lime-400" />
+                        <span>Complete</span>
                       </button>
                     </div>
                   </div>
@@ -627,14 +657,13 @@ export const ProgressPage: React.FC = () => {
               })}
             </div>
           ) : (
-            <div className="text-center py-8 text-slate-500 text-xs sm:text-sm space-y-2">
-              <p className="font-semibold text-slate-700">Your spaced retrieval queue is clear!</p>
-              <p className="text-slate-400">
-                As you complete practice quizzes and identify difficult questions, concepts will be placed into the Leitner schedule.
-              </p>
-            </div>
+            <EmptyState
+              icon={<RotateCcw className="w-5 h-5" />}
+              title="Your spaced retrieval queue is clear"
+              description="As you complete practice quizzes and identify concepts for review, they are scheduled into your Leitner queue."
+            />
           )}
-        </div>
+        </StudioPanel>
       )}
     </div>
   );

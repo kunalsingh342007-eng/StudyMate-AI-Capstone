@@ -309,14 +309,22 @@ export const MasteryEngine = {
    * Builds the Knowledge Map hierarchical tree
    */
   buildKnowledgeTree(activePlan: StudyPlan | null, masteries: Record<string, TopicMastery>): LearningPathNode[] {
-    const defaultTopics = [
-      'Data Structures & Algorithms',
-      'Operating Systems',
-      'Database Management Systems',
-      'Computer Networks',
-    ];
+    const planTopics = activePlan?.topics || [];
+    const masteryTopics = Object.keys(masteries);
+    const seen = new Set<string>();
+    const topicsToUse: string[] = [];
 
-    const topicsToUse = activePlan && activePlan.topics.length > 0 ? activePlan.topics : defaultTopics;
+    [...planTopics, ...masteryTopics].forEach((topic) => {
+      const normalized = topic.trim();
+      if (normalized && !seen.has(normalized.toLowerCase())) {
+        seen.add(normalized.toLowerCase());
+        topicsToUse.push(normalized);
+      }
+    });
+
+    if (topicsToUse.length === 0) {
+      return [];
+    }
 
     return topicsToUse.map((topicName, idx) => {
       const tm = masteries[topicName];

@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { StorageService } from '../services/storage/storageService';
+import { auth } from '../services/firebase/firebase';
+import { FirestoreService } from '../services/firebase/firestoreService';
 import {
   StudyPlan,
   UserPreferences,
@@ -60,7 +62,6 @@ export function useStorage() {
   }, []);
 
   useEffect(() => {
-    StorageService.seedSampleDataIfEmpty();
     syncFromStorage();
 
     const handleStorageChange = () => {
@@ -78,14 +79,48 @@ export function useStorage() {
 
   const setActivePlan = useCallback((plan: StudyPlan) => {
     StorageService.setActivePlan(plan);
+    const uid = auth?.currentUser?.uid;
+    if (uid) {
+      FirestoreService.saveStudyPlan(uid, plan).catch(() => {});
+    }
   }, []);
 
+  const addTaskToActivePlan = useCallback(
+    (taskInput: {
+      topic: string;
+      subtopic?: string;
+      date?: string;
+      durationMinutes?: number;
+      priority?: 'High' | 'Medium' | 'Low';
+      learningObjective?: string;
+      subjectName?: string;
+    }) => {
+      const updatedPlan = StorageService.addTaskToActivePlan(taskInput);
+      const uid = auth?.currentUser?.uid;
+      if (uid && updatedPlan) {
+        FirestoreService.saveStudyPlan(uid, updatedPlan).catch(() => {});
+      }
+      return updatedPlan;
+    },
+    []
+  );
+
   const updateTaskStatus = useCallback((taskId: string, status: 'pending' | 'completed' | 'missed', reason?: string) => {
-    return StorageService.updateTaskStatus(taskId, status, reason);
+    const updated = StorageService.updateTaskStatus(taskId, status, reason);
+    const uid = auth?.currentUser?.uid;
+    if (uid && updated) {
+      FirestoreService.saveStudyPlan(uid, updated).catch(() => {});
+    }
+    return updated;
   }, []);
 
   const updateTaskNotes = useCallback((taskId: string, notes: string) => {
-    return StorageService.updateTaskNotes(taskId, notes);
+    const updated = StorageService.updateTaskNotes(taskId, notes);
+    const uid = auth?.currentUser?.uid;
+    if (uid && updated) {
+      FirestoreService.saveStudyPlan(uid, updated).catch(() => {});
+    }
+    return updated;
   }, []);
 
   const saveQuizResult = useCallback((result: QuizResult) => {
@@ -98,6 +133,10 @@ export function useStorage() {
 
   const deletePlan = useCallback((id: string) => {
     StorageService.deletePlan(id);
+    const uid = auth?.currentUser?.uid;
+    if (uid) {
+      FirestoreService.deleteStudyPlan(uid, id).catch(() => {});
+    }
   }, []);
 
   const resolveMistake = useCallback((id: string) => {
@@ -165,7 +204,12 @@ export function useStorage() {
   }, []);
 
   const saveUserProfile = useCallback((profile: Partial<UserProfile>) => {
-    return StorageService.saveUserProfile(profile);
+    const updated = StorageService.saveUserProfile(profile);
+    const uid = auth?.currentUser?.uid;
+    if (uid) {
+      FirestoreService.saveUserProfile(uid, profile).catch(() => {});
+    }
+    return updated;
   }, []);
 
   return {
@@ -188,6 +232,7 @@ export function useStorage() {
     notes,
     userProfile,
     setActivePlan,
+    addTaskToActivePlan,
     updateTaskStatus,
     updateTaskNotes,
     saveQuizResult,

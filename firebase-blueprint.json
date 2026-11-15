@@ -9,13 +9,33 @@
           "type": "string",
           "description": "The student's full display name."
         },
+        "preferredName": {
+          "type": "string",
+          "description": "Optional preferred name or nickname."
+        },
         "email": {
           "type": "string",
           "description": "The student's primary email address."
         },
         "photoURL": {
           "type": "string",
-          "description": "URL to student avatar image."
+          "description": "External auth photo URL if present."
+        },
+        "avatarRemoved": {
+          "type": "boolean",
+          "description": "Whether the user explicitly removed their profile picture."
+        },
+        "city": {
+          "type": "string",
+          "description": "Student city."
+        },
+        "state": {
+          "type": "string",
+          "description": "Student state or province."
+        },
+        "country": {
+          "type": "string",
+          "description": "Student country."
         },
         "academicLevel": {
           "type": "string",
@@ -25,9 +45,123 @@
           "type": "string",
           "description": "College, university, or school institution."
         },
+        "degree": {
+          "type": "string",
+          "description": "Degree program e.g. B.Tech, B.Sc."
+        },
+        "branch": {
+          "type": "string",
+          "description": "Major, branch, or specialization."
+        },
+        "currentYear": {
+          "type": "string",
+          "description": "Current academic year."
+        },
+        "currentSemester": {
+          "type": "string",
+          "description": "Current semester."
+        },
+        "admissionYear": {
+          "type": "number",
+          "description": "Year of admission."
+        },
+        "expectedGraduationYear": {
+          "type": "number",
+          "description": "Expected graduation year."
+        },
+        "careerInterest": {
+          "type": "string",
+          "description": "Student's career interest or target domain."
+        },
         "targetExam": {
           "type": "string",
-          "description": "Target exam name or semester finals."
+          "description": "Target exam name or learning milestone."
+        },
+        "targetExamDate": {
+          "type": "string",
+          "description": "Target exam or milestone date (YYYY-MM-DD)."
+        },
+        "upcomingExams": {
+          "type": "array",
+          "items": { "type": "object" },
+          "description": "Additional upcoming exams and target dates."
+        },
+        "learningGoal": {
+          "type": "string",
+          "description": "User-defined learning goal when preparing for a goal or milestone."
+        },
+        "subjects": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of subjects or skills the student is studying."
+        },
+        "weakTopics": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Topics flagged by the student as needing extra revision."
+        },
+        "timetable": {
+          "type": "string",
+          "description": "Optional existing college or work timetable constraints."
+        },
+        "preferredStudyDays": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Preferred days of the week for scheduled study."
+        },
+        "preferredStudyTime": {
+          "type": "string",
+          "description": "Preferred daily study time window."
+        },
+        "secondaryEducation": {
+          "type": "object",
+          "description": "Self-reported Class 10 board, school, passing year, marks, and percentage."
+        },
+        "higherSecondaryEducation": {
+          "type": "object",
+          "description": "Self-reported Class 12 or equivalent board, school, stream, passing year, marks, and percentage."
+        },
+        "semesterResults": {
+          "type": "array",
+          "items": { "type": "object" },
+          "description": "Self-reported undergraduate semester SGPA, CGPA, credits, and year records."
+        },
+        "goals": {
+          "type": "array",
+          "items": { "type": "object" },
+          "description": "User-created personal, academic, and skill goals and milestones."
+        },
+        "skills": {
+          "type": "array",
+          "items": { "type": "object" },
+          "description": "Self-reported technical and non-technical skills."
+        },
+        "projects": {
+          "type": "array",
+          "items": { "type": "object" },
+          "description": "Student portfolio projects."
+        },
+        "certifications": {
+          "type": "array",
+          "items": { "type": "object" },
+          "description": "Self-reported certifications and credential links."
+        },
+        "experiences": {
+          "type": "array",
+          "items": { "type": "object" },
+          "description": "Internship, research, work, and leadership records."
+        },
+        "socialLinks": {
+          "type": "object",
+          "description": "GitHub, LinkedIn, and personal portfolio URLs."
+        },
+        "onboardingCompleted": {
+          "type": "boolean",
+          "description": "Whether the student has completed initial study profile onboarding."
+        },
+        "onboardingStep": {
+          "type": "number",
+          "description": "Last saved step index for partial onboarding recovery."
         },
         "bio": {
           "type": "string",
@@ -47,6 +181,25 @@
         }
       },
       "required": ["email"]
+    },
+    "ProfileAvatar": {
+      "title": "ProfileAvatar",
+      "description": "Private owner-only compressed profile picture data stored separately from the main user document.",
+      "type": "object",
+      "properties": {
+        "dataUrl": {
+          "type": "string",
+          "description": "Validated and resized JPEG/PNG/WebP data URL."
+        },
+        "mimeType": {
+          "type": "string",
+          "enum": ["image/jpeg", "image/png", "image/webp"]
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "required": ["dataUrl", "mimeType"]
     },
     "UserPreferences": {
       "title": "UserPreferences",
@@ -87,6 +240,31 @@
           "description": "ISO timestamp of last preferences update."
         }
       }
+    },
+    "StudyPlan": {
+      "title": "StudyPlan",
+      "description": "User-created or reviewed AI study plan stored under users/{userId}/studyPlans/{planId}.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "subject": { "type": "string" },
+        "examDate": { "type": "string" },
+        "dailyHours": { "type": "number" },
+        "level": { "type": "string" },
+        "topics": { "type": "array", "items": { "type": "string" } },
+        "weakTopics": { "type": "array", "items": { "type": "string" } },
+        "preferredDays": { "type": "array", "items": { "type": "string" } },
+        "tasks": { "type": "array", "items": { "type": "object" } },
+        "totalDays": { "type": "number" },
+        "totalStudyHours": { "type": "number" },
+        "assumptions": { "type": "array", "items": { "type": "string" } },
+        "learningGoal": { "type": "string" },
+        "timetable": { "type": "string" },
+        "isManual": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "subject", "tasks"]
     }
   },
   "firestore": {
@@ -96,11 +274,23 @@
       },
       "description": "User profile document owned exclusively by the authenticated user."
     },
+    "/users/{userId}/profile/avatar": {
+      "schema": {
+        "$ref": "#/entities/ProfileAvatar"
+      },
+      "description": "Private owner-only profile picture data."
+    },
     "/users/{userId}/settings/preferences": {
       "schema": {
         "$ref": "#/entities/UserPreferences"
       },
       "description": "Preferences document for user appearance, study goals, and reminders."
+    },
+    "/users/{userId}/studyPlans/{planId}": {
+      "schema": {
+        "$ref": "#/entities/StudyPlan"
+      },
+      "description": "Saved study plans owned exclusively by the authenticated user."
     }
   }
 }

@@ -60,7 +60,7 @@ export function validateStudyPlanInput(body: any): ValidationResult<StudyPlanReq
     return { success: false, error: 'Request body must be a valid JSON object.' };
   }
 
-  const { subject, topics, examDate, dailyHours, level, weakTopics, preferredDays } = body;
+  const { subject, topics, examDate, dailyHours, level, weakTopics, preferredDays, learningGoal, timetable } = body;
 
   if (typeof subject !== 'string' || subject.trim().length === 0) {
     return { success: false, error: 'Subject is required and must be a non-empty string.' };
@@ -120,6 +120,13 @@ export function validateStudyPlanInput(body: any): ValidationResult<StudyPlanReq
     }
   }
 
+  const parsedGoal = typeof learningGoal === 'string' && learningGoal.trim()
+    ? learningGoal.trim().slice(0, 300)
+    : undefined;
+  const parsedTimetable = typeof timetable === 'string' && timetable.trim()
+    ? timetable.trim().slice(0, 1000)
+    : undefined;
+
   return {
     success: true,
     data: {
@@ -130,6 +137,8 @@ export function validateStudyPlanInput(body: any): ValidationResult<StudyPlanReq
       level: parsedLevel,
       weakTopics: parsedWeak,
       preferredDays: parsedDays,
+      ...(parsedGoal ? { learningGoal: parsedGoal } : {}),
+      ...(parsedTimetable ? { timetable: parsedTimetable } : {}),
     },
   };
 }
